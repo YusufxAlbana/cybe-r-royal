@@ -13,12 +13,18 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500&display=swap');
-        body { font-family: 'Roboto', sans-serif; background-color: #020617; }
+        body { font-family: 'Roboto', sans-serif; background-color: #020617; color: white; }
         .font-cyber { font-family: 'Orbitron', sans-serif; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .glow-btn:hover { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -29,56 +35,46 @@
         const SUPABASE_URL = 'https://burwdynmnxxefhoeyudv.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1cndkeW5tbnh4ZWZob2V5dWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MzE2ODgsImV4cCI6MjA3OTMwNzY4OH0.zeL1Lp5nbyb5CXbhYQ_VtyR12-59CetzwngcrTclVY0';
 
-        // Helper: LocalStorage Fallback
         const localStore = {
             get: (key) => JSON.parse(localStorage.getItem(key) || 'null'),
             set: (key, val) => localStorage.setItem(key, JSON.stringify(val))
         };
 
-        // Mock Client (Offline Mode)
         class MockSupabaseClient {
-            constructor() { console.warn("Menggunakan Mode Lokal (Database Error/Offline)"); }
+            constructor() { console.warn("Mode Offline Aktif"); }
             get auth() {
                 return {
-                    signUp: async ({ email }) => { return { data: { user: { id: 'local_' + email, email } }, error: null }; },
-                    signInWithPassword: async ({ email }) => { return { data: { user: { id: 'local_' + email, email } }, error: null }; },
-                    signOut: async () => { return { error: null }; },
-                    getSession: async () => { return { data: { session: null } }; },
-                    onAuthStateChange: (cb) => { return { data: { subscription: { unsubscribe: () => {} } } }; }
+                    signUp: async ({ email }) => ({ data: { user: { id: 'local_'+email, email } }, error: null }),
+                    signInWithPassword: async ({ email }) => ({ data: { user: { id: 'local_'+email, email } }, error: null }),
+                    signOut: async () => ({ error: null }),
+                    getSession: async () => ({ data: { session: null } }),
+                    onAuthStateChange: (cb) => ({ data: { subscription: { unsubscribe: () => {} } } }),
+                    updateUser: async (data) => ({ data: { user: { ...data } }, error: null })
                 };
             }
-            from() { 
-                return { 
-                    select: () => ({ eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }) }),
-                    insert: async () => ({ error: 'Offline' }),
-                    update: async () => ({ error: 'Offline' }),
-                    upsert: async () => ({ error: 'Offline' })
-                }; 
-            }
+            from() { return { select: () => ({ eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }) }), insert: async () => ({ error: 'Offline' }), update: async () => ({ error: 'Offline' }) }; }
         }
 
         let supabase;
         try { 
-            // Aktifkan Auto Refresh Token & Persist Session
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                auth: {
-                    persistSession: true, // KUNCI UTAMA AGAR TIDAK LOGOUT SENDIRI
-                    autoRefreshToken: true,
-                }
-            }); 
-        } 
-        catch (e) { supabase = new MockSupabaseClient(); }
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } }); 
+        } catch (e) { supabase = new MockSupabaseClient(); }
 
-        // --- ICONS (SVG) ---
+        // --- ICONS ---
         const Icons = {
-            Crown: () => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-3-4 3-6-7zm5 16h10"/></svg>,
-            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
-            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            Crown: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-3-4 3-6-7zm5 16h10"/></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
+            Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            CreditCard: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         };
 
-        // --- HALAMAN LOGIN / REGISTER ---
+        // --- AUTH COMPONENT ---
         function AuthPage() {
             const [isRegister, setIsRegister] = React.useState(false);
             const [email, setEmail] = React.useState('');
@@ -98,56 +94,36 @@
                     else result = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
 
                     if (result.error) throw result.error;
-                    
-                    // Sukses
-                    if (isRegister && result.data?.user && !result.data?.session) {
-                         setSuccessMsg("Berhasil daftar! Silakan pindah ke tab MASUK.");
-                    } else if (!isRegister) {
-                         // Login Sukses, force reload kalau state nggak berubah otomatis
-                         // window.location.reload(); 
-                    }
+                    if (isRegister && result.data?.user && !result.data?.session) setSuccessMsg("Daftar Berhasil! Silakan Login.");
                 } catch (error) {
                     let msg = error.message;
-                    if (msg.includes("fetch")) msg = "Mode Offline: Masuk ke penyimpanan lokal...";
-                    else if (msg.includes("Invalid login")) msg = "Email/Password salah atau belum daftar.";
-                    else if (msg.includes("already registered")) msg = "Email sudah terdaftar! Klik MASUK.";
-                    
-                    if (msg.includes("Mode Offline")) {
-                        const mockUser = { id: 'local_' + cleanEmail, email: cleanEmail };
-                        localStorage.setItem('sb-session', JSON.stringify({ user: mockUser }));
-                        window.location.reload(); 
+                    if (msg.includes("fetch")) {
+                        // Offline fallback
+                        localStorage.setItem('sb-session', JSON.stringify({ user: { id: 'local_'+cleanEmail, email: cleanEmail } }));
+                        window.location.reload();
                         return;
                     }
+                    if (msg.includes("Invalid login")) msg = "Email/Password salah.";
                     setErrorMsg(msg);
                 } finally { setLoading(false); }
             };
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] relative overflow-hidden">
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[100px]"></div></div>
+                <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] relative">
+                    <div className="absolute inset-0 pointer-events-none"><div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 to-blue-900/20"></div></div>
                     <div className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10">
-                        <div className="text-center mb-6"><h1 className="text-3xl font-bold text-white font-cyber">ROYAL ACCESS</h1></div>
-                        
+                        <div className="text-center mb-6"><h1 className="text-3xl font-bold text-yellow-500 font-cyber tracking-widest">ROYAL CYBER</h1></div>
                         <div className="flex border-b border-white/10 mb-6">
-                            <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold transition-colors ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400 bg-white/5' : 'text-slate-500 hover:text-white'}`}>MASUK</button>
-                            <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold transition-colors ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400 bg-white/5' : 'text-slate-500 hover:text-white'}`}>DAFTAR</button>
+                            <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button>
+                            <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button>
                         </div>
-
                         <form onSubmit={handleAuth} className="space-y-6">
-                            {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm font-bold border border-red-500/50">{errorMsg}</div>}
-                            {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm font-bold border border-green-500/50">{successMsg}</div>}
-                            
-                            <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-yellow-500 transition-colors"><Icons.User /></div>
-                                <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500 transition-all" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
-                            </div>
-                            <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-yellow-500 transition-colors"><Icons.Lock /></div>
-                                <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500 transition-all" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
-                            </div>
-
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber tracking-wider glow-btn transition-transform active:scale-95">
-                                {loading ? 'LOADING...' : (isRegister ? 'DAFTAR SEKARANG' : 'MASUK LOBI')}
+                            {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm">{errorMsg}</div>}
+                            {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm">{successMsg}</div>}
+                            <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 px-4 text-white" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
+                            <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 px-4 text-white" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber glow-btn">
+                                {loading ? 'LOADING...' : (isRegister ? 'DAFTAR' : 'MASUK')}
                             </button>
                         </form>
                     </div>
@@ -155,7 +131,104 @@
             );
         }
 
-        // --- GAME PAGE ---
+        // --- PAGES COMPONENTS ---
+
+        function ProfilePage({ session }) {
+            const [email, setEmail] = React.useState(session.user.email);
+            const [password, setPassword] = React.useState('');
+            const [fullName, setFullName] = React.useState(session.user.user_metadata?.full_name || '');
+            const [msg, setMsg] = React.useState('');
+
+            const handleUpdate = async (e) => {
+                e.preventDefault();
+                setMsg('Mengupdate...');
+                const updates = { email, data: { full_name: fullName } };
+                if (password) updates.password = password;
+
+                const { error } = await supabase.auth.updateUser(updates);
+                if (error) setMsg("Gagal: " + error.message);
+                else setMsg("Profile Berhasil Diupdate!");
+            };
+
+            return (
+                <div className="max-w-2xl mx-auto p-6 animate-fade-in">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Edit Profile</h2>
+                    <form onSubmit={handleUpdate} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Email</label>
+                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Nama Tampilan</label>
+                            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" placeholder="Nama Anda" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Password Baru (Kosongkan jika tidak ubah)</label>
+                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" placeholder="********" />
+                        </div>
+                        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold w-full">SIMPAN PERUBAHAN</button>
+                        {msg && <p className="text-center text-yellow-400 mt-2">{msg}</p>}
+                    </form>
+                </div>
+            );
+        }
+
+        function TopUpPage({ onTopUp }) {
+            const amounts = [10000, 25000, 50000, 100000, 500000, 1000000];
+            return (
+                <div className="max-w-4xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {amounts.map(amt => (
+                            <button key={amt} onClick={() => onTopUp(amt)} className="p-6 bg-slate-800 border border-slate-700 rounded-xl hover:border-yellow-500 hover:bg-slate-700 transition-all group">
+                                <div className="text-slate-400 text-xs mb-1">Chip</div>
+                                <div className="text-xl font-bold text-white group-hover:text-yellow-400">{amt.toLocaleString()}</div>
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-8 text-slate-500 text-sm text-center">Klik nominal untuk langsung mengisi saldo (Simulasi).</p>
+                </div>
+            );
+        }
+
+        function InfoPage() {
+            return (
+                <div className="max-w-2xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Tentang Aplikasi</h2>
+                    <div className="space-y-4 text-slate-300 leading-relaxed">
+                        <p>Selamat datang di <strong>Royal Cyber Casino</strong>, platform simulasi slot paling canggih dengan tema Cyberpunk.</p>
+                        <p>Tujuan aplikasi ini adalah sebagai sarana hiburan semata ("Just for Fun") dan demonstrasi teknologi web modern. Tidak ada uang sungguhan yang digunakan dalam perjudian di sini. Semua chip adalah virtual.</p>
+                        <p>Nikmati sensasi bermain tanpa risiko finansial!</p>
+                    </div>
+                </div>
+            );
+        }
+
+        function PatternPage() {
+            return (
+                <div className="max-w-3xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Informasi Pola Gacor (RTP)</h2>
+                    <div className="grid gap-4">
+                        <div className="bg-slate-800/50 p-4 rounded-lg border border-yellow-500/30">
+                            <h3 className="text-lg font-bold text-yellow-400 mb-2">🔥 Pola Pagi (06:00 - 10:00)</h3>
+                            <p className="text-sm text-slate-300">Auto 20x | Manual 5x | Auto 10x</p>
+                            <div className="w-full bg-slate-700 h-2 rounded mt-2"><div className="bg-green-500 h-2 rounded" style={{width: '85%'}}></div></div>
+                            <span className="text-xs text-green-400">Win Rate 85%</span>
+                        </div>
+                        <div className="bg-slate-800/50 p-4 rounded-lg border border-blue-500/30">
+                            <h3 className="text-lg font-bold text-blue-400 mb-2">🌙 Pola Malam (20:00 - 00:00)</h3>
+                            <p className="text-sm text-slate-300">Manual 10x | Auto 50x (Turbo Off)</p>
+                            <div className="w-full bg-slate-700 h-2 rounded mt-2"><div className="bg-yellow-500 h-2 rounded" style={{width: '60%'}}></div></div>
+                            <span className="text-xs text-yellow-400">Win Rate 60%</span>
+                        </div>
+                        <div className="p-4 bg-red-900/20 border border-red-500/20 rounded text-sm text-red-200">
+                            ⚠️ Pola ini hanya prediksi simulasi dan tidak menjamin kemenangan 100%.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         const SYMBOLS = [
             { id: 1, icon: "💎", color: 'text-cyan-400', value: 50 },
             { id: 2, icon: "👑", color: 'text-yellow-400', value: 30 },
@@ -164,92 +237,62 @@
             { id: 5, icon: "✨", color: 'text-purple-400', value: 5 },
         ];
 
-        function GamePage({ session }) {
-            const [balance, setBalance] = React.useState(0);
+        function GameContent({ balance, updateBalance, winMessage, setWinMessage }) {
             const [reels, setReels] = React.useState([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]);
             const [isSpinning, setIsSpinning] = React.useState(false);
-            const [winMessage, setWinMessage] = React.useState('Siap Main!');
             const [winAmount, setWinAmount] = React.useState(0);
-            const [loadingBalance, setLoadingBalance] = React.useState(true);
-            const [isOfflineMode, setIsOfflineMode] = React.useState(false);
+            const [isAuto, setIsAuto] = React.useState(false);
+            const autoRef = React.useRef(isAuto);
 
-            const loadUserData = async () => {
-                setLoadingBalance(true);
-                const { user } = session;
-                const localBal = localStore.get('balance_' + user.id);
-                try {
-                    const { data, error } = await supabase.from('players').select('balance').eq('id', user.id).single();
-                    if (!error && data) {
-                        setBalance(data.balance);
-                        setIsOfflineMode(false);
-                    } else if (error && (error.code === 'PGRST116' || error.message.includes('JSON'))) { 
-                        await supabase.from('players').insert([{ id: user.id, balance: 10000 }]);
-                        setBalance(10000);
-                    } else throw new Error("Database Error");
-                } catch (err) {
-                    console.log("Mode Offline Aktif:", err.message);
-                    setIsOfflineMode(true);
-                    setBalance(localBal !== null ? localBal : 10000);
-                    setWinMessage("Mode Lokal Aktif");
+            React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]);
+
+            const spin = async () => {
+                if (balance < 100) {
+                    setIsAuto(false);
+                    return setWinMessage("Saldo Habis!");
                 }
-                setLoadingBalance(false);
-            };
-
-            React.useEffect(() => { loadUserData(); }, [session]);
-
-            const saveBalance = async (newBal) => {
-                localStore.set('balance_' + session.user.id, newBal);
-                if (!isOfflineMode) {
-                    const { error } = await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id);
-                    if (error) setIsOfflineMode(true);
-                }
-            };
-            
-            const spin = () => {
-                if (balance < 100) return setWinMessage("Saldo Habis!");
+                
                 const newBal = balance - 100;
-                setBalance(newBal); saveBalance(newBal);
-                setIsSpinning(true); setWinMessage("Spinning..."); setWinAmount(0);
+                updateBalance(newBal); // Optimistic update
+                setIsSpinning(true); setWinAmount(0); setWinMessage(isAuto ? "Auto Spinning..." : "Spinning...");
 
                 const interval = setInterval(() => setReels([
                     SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]
                 ]), 100);
 
-                setTimeout(() => {
-                    clearInterval(interval);
-                    const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
-                    setReels(final);
-                    let win = 0; let msg = "Coba Lagi";
-                    if (final[0].id === final[1].id && final[1].id === final[2].id) { win = final[0].value * 20; msg = "JACKPOT!!!"; }
-                    else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) { win = 200; msg = "BIG WIN!"; }
-                    if (win > 0) { const wBal = newBal + win; setBalance(wBal); saveBalance(wBal); setWinAmount(win); }
-                    setWinMessage(msg); setIsSpinning(false);
-                }, 2000);
+                await new Promise(r => setTimeout(r, 1000)); // Spin duration
+                clearInterval(interval);
+                
+                const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
+                setReels(final);
+                
+                let win = 0; let msg = isAuto ? "Auto Mode On" : "Coba Lagi";
+                if (final[0].id === final[1].id && final[1].id === final[2].id) { win = final[0].value * 20; msg = "JACKPOT!!!"; }
+                else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) { win = 200; msg = "BIG WIN!"; }
+                
+                if (win > 0) { 
+                    updateBalance(newBal + win); 
+                    setWinAmount(win); 
+                    if(isAuto) setWinMessage(`Win +${win}`);
+                    else setWinMessage(msg);
+                }
+
+                setIsSpinning(false);
+
+                if (autoRef.current && newBal >= 100) {
+                    setTimeout(spin, 500);
+                } else if (autoRef.current) {
+                    setIsAuto(false); // Stop auto if balance low
+                }
             };
 
-            const resetSaldo = () => { setBalance(10000); saveBalance(10000); setWinMessage("Saldo Direset!"); };
+            // Trigger auto spin
+            React.useEffect(() => {
+                if (isAuto && !isSpinning) spin();
+            }, [isAuto]);
 
             return (
-                <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center p-4">
-                    <div className="w-full max-w-lg flex justify-between items-center p-4 bg-slate-900/80 rounded-2xl mb-8 border border-white/10 shadow-lg backdrop-blur">
-                        <div className="flex items-center gap-3">
-                            <span className="text-yellow-500 drop-shadow-lg"><Icons.Crown /></span>
-                            <div>
-                                <h2 className="font-cyber font-bold text-yellow-500 tracking-wide">ROYAL CYBER</h2>
-                                <p className="text-[10px] text-slate-400 flex items-center gap-1">{isOfflineMode ? <span className="w-2 h-2 bg-red-500 rounded-full"></span> : <span className="w-2 h-2 bg-green-500 rounded-full"></span>} {session.user.email}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="text-right bg-black/30 px-3 py-1 rounded-lg border border-white/5">
-                                <div className="text-[10px] text-slate-400 uppercase tracking-wider">Saldo</div>
-                                <div className="text-xl font-cyber font-bold text-white flex items-center gap-2 justify-end">
-                                    {loadingBalance ? <span className="animate-pulse text-sm">...</span> : balance.toLocaleString()}
-                                    <button onClick={resetSaldo} className="bg-slate-700 hover:bg-slate-600 p-1.5 rounded-md text-white transition-colors" title="Reset Saldo"><Icons.Refresh/></button>
-                                </div>
-                            </div>
-                            <button onClick={() => { localStorage.removeItem('sb-session'); supabase.auth.signOut(); }} className="p-2.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"><Icons.LogOut /></button>
-                        </div>
-                    </div>
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
                     <div className="w-full max-w-lg bg-gradient-to-b from-yellow-600 via-yellow-500 to-yellow-800 p-1 rounded-3xl shadow-[0_0_60px_rgba(234,179,8,0.3)]">
                         <div className="bg-slate-950 rounded-[20px] p-6 border-4 border-slate-900 relative overflow-hidden text-center">
                             <div className="flex justify-between gap-2 mb-6">
@@ -260,57 +303,161 @@
                                 ))}
                             </div>
                             <div className="h-12 mb-4 flex items-center justify-center">
-                                {winAmount > 0 ? <div className="text-yellow-400 font-black text-3xl font-cyber animate-bounce drop-shadow-lg">+{winAmount}</div> : <div className="text-slate-500 text-lg font-light tracking-widest">{winMessage}</div>}
+                                {winAmount > 0 ? <div className="text-yellow-400 font-black text-3xl font-cyber animate-bounce">+{winAmount}</div> : <div className="text-slate-500 font-light tracking-widest">{winMessage}</div>}
                             </div>
-                            <button onClick={spin} disabled={isSpinning || loadingBalance} className={`w-full py-4 rounded-xl font-black text-2xl tracking-[0.2em] font-cyber transition-all transform active:scale-95 ${isSpinning ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-[0_0_30px_rgba(124,58,237,0.5)] hover:brightness-110'}`}>
-                                {isSpinning ? '...' : 'PUTAR (100)'}
-                            </button>
+                            
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold text-xl transition-all ${isAuto ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                                    {isAuto ? 'STOP AUTO' : 'AUTO'}
+                                </button>
+                                <button onClick={() => { if(!isAuto) spin(); }} disabled={isSpinning || isAuto} className={`flex-[2] py-4 rounded-xl font-black text-2xl tracking-[0.2em] font-cyber transition-all transform active:scale-95 ${isSpinning || isAuto ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110'}`}>
+                                    SPIN
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         }
 
-        // --- ROOT APP & AUTO LOGIN LOGIC ---
+        // --- MAIN DASHBOARD LAYOUT ---
+        function Dashboard({ session, onLogout }) {
+            const [view, setView] = React.useState('game'); // game, profile, topup, info, pola
+            const [balance, setBalance] = React.useState(0);
+            const [winMessage, setWinMessage] = React.useState('Selamat Datang');
+            const [isSidebarOpen, setSidebarOpen] = React.useState(true); // For mobile toggles logic could be added
+
+            // Load Balance
+            const loadUserData = async () => {
+                const { user } = session;
+                const localBal = localStore.get('balance_' + user.id);
+                try {
+                    const { data, error } = await supabase.from('players').select('balance').eq('id', user.id).single();
+                    if (!error && data) setBalance(data.balance);
+                    else if (error) { // Try create
+                        await supabase.from('players').insert([{ id: user.id, balance: 10000 }]);
+                        setBalance(10000);
+                    }
+                } catch (err) {
+                    if(localBal !== null) setBalance(localBal);
+                }
+            };
+            React.useEffect(() => { loadUserData(); }, [session]);
+
+            const updateBalance = async (newBal) => {
+                setBalance(newBal);
+                localStore.set('balance_' + session.user.id, newBal);
+                await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id);
+            };
+
+            const handleTopUp = (amount) => {
+                const newBal = balance + amount;
+                updateBalance(newBal);
+                setWinMessage(`Top Up +${amount.toLocaleString()} Sukses!`);
+                setView('game'); // Back to game
+            };
+
+            const NavItem = ({ id, icon: Icon, label }) => (
+                <button onClick={() => setView(id)} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all mb-1 ${view === id ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                    <Icon /> <span>{label}</span>
+                </button>
+            );
+
+            return (
+                <div className="min-h-screen flex bg-[#020617]">
+                    {/* SIDEBAR */}
+                    <aside className="w-64 bg-slate-900 border-r border-white/5 flex flex-col hidden md:flex">
+                        <div className="p-6 border-b border-white/5">
+                            <div className="flex items-center gap-2 text-yellow-500">
+                                <Icons.Crown /> <span className="font-cyber font-bold text-xl tracking-widest">ROYAL</span>
+                            </div>
+                        </div>
+                        <nav className="flex-1 p-4 overflow-y-auto">
+                            <NavItem id="game" icon={Icons.Home} label="Game Slot" />
+                            <NavItem id="topup" icon={Icons.CreditCard} label="Top Up Saldo" />
+                            <NavItem id="pola" icon={Icons.Zap} label="Informasi Pola" />
+                            <NavItem id="info" icon={Icons.Info} label="Informasi App" />
+                            <div className="my-4 border-t border-white/5"></div>
+                            <NavItem id="profile" icon={Icons.Settings} label="Profile Saya" />
+                        </nav>
+                        <div className="p-4 border-t border-white/5">
+                            <button onClick={onLogout} className="w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-900/20 transition-colors">
+                                <Icons.LogOut /> <span>Keluar</span>
+                            </button>
+                        </div>
+                    </aside>
+
+                    {/* MAIN CONTENT */}
+                    <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+                        {/* HEADER MOBILE/DESKTOP */}
+                        <header className="h-16 border-b border-white/5 bg-slate-900/50 backdrop-blur flex items-center justify-between px-4 md:px-8">
+                             {/* Mobile Menu Button Placeholder - visible on small screens only usually */}
+                            <div className="md:hidden font-cyber text-yellow-500 font-bold">ROYAL CYBER</div>
+                            
+                            <div className="hidden md:block font-bold text-slate-500 text-sm">ID: {session.user.email}</div>
+                            
+                            <div className="flex items-center gap-4">
+                                <div className="bg-black/30 border border-yellow-500/30 px-4 py-1.5 rounded-full flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400 uppercase">SALDO</span>
+                                    <span className="text-yellow-400 font-mono font-bold">{balance.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* CONTENT AREA */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                            {view === 'game' && <GameContent balance={balance} updateBalance={updateBalance} winMessage={winMessage} setWinMessage={setWinMessage} />}
+                            {view === 'profile' && <ProfilePage session={session} />}
+                            {view === 'topup' && <TopUpPage onTopUp={handleTopUp} />}
+                            {view === 'info' && <InfoPage />}
+                            {view === 'pola' && <PatternPage />}
+                        </div>
+                        
+                        {/* MOBILE BOTTOM NAV */}
+                        <div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-2">
+                            <button onClick={() => setView('game')} className={`p-2 rounded ${view==='game'?'text-yellow-400':'text-slate-500'}`}><Icons.Home /></button>
+                            <button onClick={() => setView('topup')} className={`p-2 rounded ${view==='topup'?'text-yellow-400':'text-slate-500'}`}><Icons.CreditCard /></button>
+                            <button onClick={() => setView('pola')} className={`p-2 rounded ${view==='pola'?'text-yellow-400':'text-slate-500'}`}><Icons.Zap /></button>
+                            <button onClick={() => setView('profile')} className={`p-2 rounded ${view==='profile'?'text-yellow-400':'text-slate-500'}`}><Icons.Settings /></button>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        // --- ROOT APP ---
         function App() {
             const [session, setSession] = React.useState(null);
             const [loading, setLoading] = React.useState(true);
 
             React.useEffect(() => {
-                const initSession = async () => {
-                    // 1. Cek Session Real dari Supabase
+                const init = async () => {
+                    // Check URL hash for Supabase OAuth redirects (if any)
+                    // Check local session
+                    const local = JSON.parse(localStorage.getItem('sb-session'));
+                    if (local) setSession(local);
+                    
                     try {
                         const { data } = await supabase.auth.getSession();
-                        if (data.session) {
-                            setSession(data.session);
-                            setLoading(false);
-                            return;
-                        }
-                    } catch (e) { console.log("Supabase Session check failed", e); }
-
-                    // 2. Cek Session Offline (Backup)
-                    const localSession = JSON.parse(localStorage.getItem('sb-session'));
-                    if (localSession) setSession(localSession);
-                    
+                        if (data.session) setSession(data.session);
+                    } catch(e) {}
                     setLoading(false);
                 };
+                init();
 
-                initSession();
-
-                // Listener Perubahan Login/Logout
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
-                    if (session) localStorage.setItem('sb-session', JSON.stringify(session));
+                    if(session) localStorage.setItem('sb-session', JSON.stringify(session));
                     else localStorage.removeItem('sb-session');
-                    setLoading(false);
                 });
-
                 return () => subscription.unsubscribe();
             }, []);
 
             if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-yellow-500 animate-pulse font-cyber tracking-widest">LOADING SYSTEM...</div>;
-            return <div>{!session ? <AuthPage /> : <GamePage session={session} />}</div>;
+            
+            return !session ? <AuthPage /> : <Dashboard session={session} onLogout={() => supabase.auth.signOut()} />;
         }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
