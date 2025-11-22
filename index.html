@@ -44,7 +44,7 @@
             constructor() { console.warn("Mode Offline Aktif"); }
             get auth() {
                 return {
-                    signUp: async ({ email }) => ({ data: { user: { id: 'local_'+email, email } }, error: null }),
+                    signUp: async ({ email, options }) => ({ data: { user: { id: 'local_'+email, email, user_metadata: options?.data } }, error: null }),
                     signInWithPassword: async ({ email }) => ({ data: { user: { id: 'local_'+email, email } }, error: null }),
                     signOut: async () => ({ error: null }),
                     getSession: async () => ({ data: { session: null } }),
@@ -73,13 +73,15 @@
             Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
             Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
             Message: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-            Image: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            Image: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
+            Edit: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         };
 
         // --- AUTH COMPONENT ---
         function AuthPage() {
             const [isRegister, setIsRegister] = React.useState(false);
             const [email, setEmail] = React.useState('');
+            const [fullName, setFullName] = React.useState(''); // State Nama
             const [password, setPassword] = React.useState('');
             const [loading, setLoading] = React.useState(false);
             const [errorMsg, setErrorMsg] = React.useState('');
@@ -92,8 +94,17 @@
                 
                 try {
                     let result;
-                    if (isRegister) result = await supabase.auth.signUp({ email: cleanEmail, password });
-                    else result = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+                    if (isRegister) {
+                        if (!fullName) throw new Error("Nama Lengkap wajib diisi!");
+                        // Kirim metadata nama saat daftar
+                        result = await supabase.auth.signUp({ 
+                            email: cleanEmail, 
+                            password,
+                            options: { data: { full_name: fullName } } 
+                        });
+                    } else {
+                        result = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+                    }
 
                     if (result.error) throw result.error;
                     if (isRegister && result.data?.user && !result.data?.session) setSuccessMsg("Daftar Berhasil! Silakan Login.");
@@ -101,7 +112,7 @@
                     let msg = error.message;
                     if (msg.includes("fetch")) {
                         // Offline fallback
-                        localStorage.setItem('sb-session', JSON.stringify({ user: { id: 'local_'+cleanEmail, email: cleanEmail } }));
+                        localStorage.setItem('sb-session', JSON.stringify({ user: { id: 'local_'+cleanEmail, email: cleanEmail, user_metadata: { full_name: fullName || 'Guest' } } }));
                         window.location.reload();
                         return;
                     }
@@ -119,12 +130,27 @@
                             <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button>
                             <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button>
                         </div>
-                        <form onSubmit={handleAuth} className="space-y-6">
+                        <form onSubmit={handleAuth} className="space-y-4">
                             {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm">{errorMsg}</div>}
                             {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm">{successMsg}</div>}
-                            <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 px-4 text-white" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
-                            <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 px-4 text-white" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber glow-btn">
+                            
+                            {/* INPUT NAMA LENGKAP (Hanya saat Daftar) */}
+                            {isRegister && (
+                                <div className="relative group animate-fade-in">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.User /></div>
+                                    <input type="text" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500" placeholder="Nama Lengkap (Display Name)" value={fullName} onChange={(e)=>setFullName(e.target.value)}/>
+                                </div>
+                            )}
+
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+                                <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.Lock /></div>
+                                <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+                            </div>
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber glow-btn mt-4">
                                 {loading ? 'LOADING...' : (isRegister ? 'DAFTAR' : 'MASUK')}
                             </button>
                         </form>
@@ -135,40 +161,82 @@
 
         // --- PAGES COMPONENTS ---
 
-        function ProfilePage({ session }) {
+        function ProfilePage({ session, profileData, refreshProfile }) {
             const [email, setEmail] = React.useState(session.user.email);
             const [password, setPassword] = React.useState('');
-            const [fullName, setFullName] = React.useState(session.user.user_metadata?.full_name || '');
+            const [fullName, setFullName] = React.useState(profileData?.full_name || '');
+            const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || '');
             const [msg, setMsg] = React.useState('');
+            const fileInputRef = React.useRef(null);
+
+            // Handle Image Selection
+            const handleImageChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 1024 * 1024) { // Limit 1MB
+                        alert("Ukuran gambar terlalu besar! Maksimal 1MB.");
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setAvatarUrl(reader.result); // Preview & Prepare for Upload
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
 
             const handleUpdate = async (e) => {
                 e.preventDefault();
                 setMsg('Mengupdate...');
-                const updates = { email, data: { full_name: fullName } };
-                if (password) updates.password = password;
+                
+                // 1. Update Auth (Email/Password)
+                const authUpdates = { email };
+                if (password) authUpdates.password = password;
+                const { error: authError } = await supabase.auth.updateUser(authUpdates);
 
-                const { error } = await supabase.auth.updateUser(updates);
-                if (error) setMsg("Gagal: " + error.message);
-                else setMsg("Profile Berhasil Diupdate!");
+                // 2. Update Table Players (Nama & Avatar)
+                const { error: dbError } = await supabase.from('players').update({
+                    full_name: fullName,
+                    avatar_url: avatarUrl // Simpan Base64 string ke DB
+                }).eq('id', session.user.id);
+
+                if (authError || dbError) setMsg("Gagal: " + (authError?.message || dbError?.message));
+                else {
+                    setMsg("Profile Berhasil Diupdate!");
+                    refreshProfile(); // Refresh data di dashboard
+                }
             };
 
             return (
                 <div className="max-w-2xl mx-auto p-6 animate-fade-in">
                     <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Edit Profile</h2>
-                    <form onSubmit={handleUpdate} className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-slate-400 mb-1">Email</label>
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" />
+                    
+                    <form onSubmit={handleUpdate} className="space-y-6">
+                        {/* Avatar Upload */}
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-yellow-500 bg-slate-800 relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                                <img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} alt="Avatar" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Icons.Edit />
+                                </div>
+                            </div>
+                            <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                            <span className="text-xs text-slate-400">Klik gambar untuk ganti</span>
                         </div>
+
                         <div>
                             <label className="block text-sm text-slate-400 mb-1">Nama Tampilan</label>
-                            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" placeholder="Nama Anda" />
+                            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Nama Lengkap" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Email</label>
+                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm text-slate-400 mb-1">Password Baru (Kosongkan jika tidak ubah)</label>
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white" placeholder="********" />
+                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="********" />
                         </div>
-                        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold w-full">SIMPAN PERUBAHAN</button>
+                        <button className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded font-bold w-full shadow-lg">SIMPAN PERUBAHAN</button>
                         {msg && <p className="text-center text-yellow-400 mt-2">{msg}</p>}
                     </form>
                 </div>
@@ -240,11 +308,8 @@
                 e.preventDefault();
                 if(!title || !desc) return;
                 setIsSent(true);
-                // Simulasi kirim
                 setTimeout(() => {
-                    setTitle('');
-                    setDesc('');
-                    setIsSent(false);
+                    setTitle(''); setDesc(''); setIsSent(false);
                     alert("Feedback Terkirim! Terima kasih atas masukan Anda.");
                 }, 1000);
             };
@@ -255,38 +320,22 @@
                     <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Judul Laporan / Saran</label>
-                                <input 
-                                    type="text" 
-                                    value={title} 
-                                    onChange={e => setTitle(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" 
-                                    placeholder="Contoh: Bug pada tombol spin" 
-                                />
+                                <label className="block text-sm text-slate-400 mb-1">Judul Laporan</label>
+                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" />
                             </div>
                             <div>
                                 <label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label>
-                                <textarea 
-                                    rows="4"
-                                    value={desc} 
-                                    onChange={e => setDesc(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" 
-                                    placeholder="Jelaskan masalah atau saran Anda secara detail..." 
-                                />
+                                <textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." />
                             </div>
                             <div>
                                 <label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label>
                                 <div className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer">
                                     <div className="flex flex-col items-center gap-2 text-slate-500">
-                                        <Icons.Image />
-                                        <span className="text-xs">Klik untuk upload screenshot</span>
+                                        <Icons.Image /><span className="text-xs">Klik untuk upload screenshot</span>
                                     </div>
-                                    <input type="file" className="hidden" accept="image/*" />
                                 </div>
                             </div>
-                            <button type="submit" disabled={isSent} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
-                                {isSent ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}
-                            </button>
+                            <button type="submit" disabled={isSent} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">{isSent ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}</button>
                         </form>
                     </div>
                 </div>
@@ -317,14 +366,14 @@
                 }
                 
                 const newBal = balance - 100;
-                updateBalance(newBal); // Optimistic update
+                updateBalance(newBal); 
                 setIsSpinning(true); setWinAmount(0); setWinMessage(isAuto ? "Auto Spinning..." : "Spinning...");
 
                 const interval = setInterval(() => setReels([
                     SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]
                 ]), 100);
 
-                await new Promise(r => setTimeout(r, 1000)); // Spin duration
+                await new Promise(r => setTimeout(r, 1000));
                 clearInterval(interval);
                 
                 const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
@@ -346,14 +395,11 @@
                 if (autoRef.current && newBal >= 100) {
                     setTimeout(spin, 500);
                 } else if (autoRef.current) {
-                    setIsAuto(false); // Stop auto if balance low
+                    setIsAuto(false);
                 }
             };
 
-            // Trigger auto spin
-            React.useEffect(() => {
-                if (isAuto && !isSpinning) spin();
-            }, [isAuto]);
+            React.useEffect(() => { if (isAuto && !isSpinning) spin(); }, [isAuto]);
 
             return (
                 <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -369,14 +415,9 @@
                             <div className="h-12 mb-4 flex items-center justify-center">
                                 {winAmount > 0 ? <div className="text-yellow-400 font-black text-3xl font-cyber animate-bounce">+{winAmount}</div> : <div className="text-slate-500 font-light tracking-widest">{winMessage}</div>}
                             </div>
-                            
                             <div className="flex gap-2">
-                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold text-xl transition-all ${isAuto ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
-                                    {isAuto ? 'STOP AUTO' : 'AUTO'}
-                                </button>
-                                <button onClick={() => { if(!isAuto) spin(); }} disabled={isSpinning || isAuto} className={`flex-[2] py-4 rounded-xl font-black text-2xl tracking-[0.2em] font-cyber transition-all transform active:scale-95 ${isSpinning || isAuto ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110'}`}>
-                                    SPIN
-                                </button>
+                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold text-xl transition-all ${isAuto ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto ? 'STOP' : 'AUTO'}</button>
+                                <button onClick={() => { if(!isAuto) spin(); }} disabled={isSpinning || isAuto} className={`flex-[2] py-4 rounded-xl font-black text-2xl tracking-[0.2em] font-cyber transition-all transform active:scale-95 ${isSpinning || isAuto ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110'}`}>SPIN</button>
                             </div>
                         </div>
                     </div>
@@ -386,30 +427,42 @@
 
         // --- MAIN DASHBOARD LAYOUT ---
         function Dashboard({ session, onLogout }) {
-            const [view, setView] = React.useState('game'); // game, profile, topup, info, pola, feedback
+            const [view, setView] = React.useState('game');
             const [balance, setBalance] = React.useState(0);
             const [winMessage, setWinMessage] = React.useState('Selamat Datang');
+            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '' });
             
-            // Load Balance
+            // Load Data
             const loadUserData = async () => {
                 const { user } = session;
-                const localBal = localStore.get('balance_' + user.id);
                 try {
-                    const { data, error } = await supabase.from('players').select('balance').eq('id', user.id).single();
-                    if (!error && data) setBalance(data.balance);
-                    else if (error) { // Try create
-                        await supabase.from('players').insert([{ id: user.id, balance: 10000 }]);
+                    // Ambil data dari tabel players
+                    const { data, error } = await supabase.from('players').select('*').eq('id', user.id).single();
+                    
+                    if (data) {
+                        setBalance(data.balance);
+                        setProfileData({ full_name: data.full_name || 'Member', avatar_url: data.avatar_url });
+                    } else if (error && (error.code === 'PGRST116' || error.message.includes('JSON'))) { 
+                        // Data belum ada, insert default (ambil nama dari metadata saat register)
+                        const initialName = user.user_metadata?.full_name || 'Member Royal';
+                        const initialAvatar = `https://api.dicebear.com/9.x/dylan/svg?seed=${initialName}`;
+                        
+                        await supabase.from('players').insert([{ 
+                            id: user.id, 
+                            balance: 10000,
+                            full_name: initialName,
+                            avatar_url: initialAvatar
+                        }]);
                         setBalance(10000);
+                        setProfileData({ full_name: initialName, avatar_url: initialAvatar });
                     }
-                } catch (err) {
-                    if(localBal !== null) setBalance(localBal);
-                }
+                } catch (err) { console.log("Error loading data", err); }
             };
+            
             React.useEffect(() => { loadUserData(); }, [session]);
 
             const updateBalance = async (newBal) => {
                 setBalance(newBal);
-                localStore.set('balance_' + session.user.id, newBal);
                 await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id);
             };
 
@@ -417,7 +470,7 @@
                 const newBal = balance + amount;
                 updateBalance(newBal);
                 setWinMessage(`Top Up +${amount.toLocaleString()} Sukses!`);
-                setView('game'); // Back to game
+                setView('game');
             };
 
             const NavItem = ({ id, icon: Icon, label }) => (
@@ -435,6 +488,18 @@
                                 <Icons.Crown /> <span className="font-cyber font-bold text-xl tracking-widest">ROYAL</span>
                             </div>
                         </div>
+                        
+                        {/* PROFILE MINI SIDEBAR */}
+                        <div className="p-4 border-b border-white/5 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full overflow-hidden border border-yellow-500/50">
+                                <img src={profileData.avatar_url || `https://api.dicebear.com/9.x/dylan/svg?seed=${profileData.full_name}`} alt="Avatar" className="w-full h-full object-cover"/>
+                            </div>
+                            <div className="overflow-hidden">
+                                <div className="text-sm font-bold text-white truncate">{profileData.full_name || 'Guest'}</div>
+                                <div className="text-[10px] text-slate-500 truncate">ID: {session.user.email.split('@')[0]}</div>
+                            </div>
+                        </div>
+
                         <nav className="flex-1 p-4 overflow-y-auto">
                             <NavItem id="game" icon={Icons.Home} label="Game Slot" />
                             <NavItem id="topup" icon={Icons.CreditCard} label="Top Up Saldo" />
@@ -455,8 +520,17 @@
                     <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
                         {/* HEADER MOBILE/DESKTOP */}
                         <header className="h-16 border-b border-white/5 bg-slate-900/50 backdrop-blur flex items-center justify-between px-4 md:px-8">
-                            <div className="md:hidden font-cyber text-yellow-500 font-bold">ROYAL CYBER</div>
-                            <div className="hidden md:block font-bold text-slate-500 text-sm">ID: {session.user.email}</div>
+                            <div className="flex items-center gap-3 md:hidden">
+                                <div className="w-8 h-8 rounded-full overflow-hidden border border-yellow-500">
+                                    <img src={profileData.avatar_url} alt="Av" className="w-full h-full object-cover"/>
+                                </div>
+                                <div className="font-cyber text-yellow-500 font-bold">ROYAL</div>
+                            </div>
+                            
+                            <div className="hidden md:block font-bold text-slate-500 text-sm">
+                                Selamat Datang, <span className="text-white">{profileData.full_name}</span>
+                            </div>
+                            
                             <div className="flex items-center gap-4">
                                 <div className="bg-black/30 border border-yellow-500/30 px-4 py-1.5 rounded-full flex items-center gap-2">
                                     <span className="text-[10px] text-slate-400 uppercase">SALDO</span>
@@ -468,7 +542,7 @@
                         {/* CONTENT AREA */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-8">
                             {view === 'game' && <GameContent balance={balance} updateBalance={updateBalance} winMessage={winMessage} setWinMessage={setWinMessage} />}
-                            {view === 'profile' && <ProfilePage session={session} />}
+                            {view === 'profile' && <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />}
                             {view === 'topup' && <TopUpPage onTopUp={handleTopUp} />}
                             {view === 'info' && <InfoPage />}
                             {view === 'pola' && <PatternPage />}
