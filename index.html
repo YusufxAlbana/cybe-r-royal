@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Cyber Casino - Member Access</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #020617; }
+        .font-cyber { font-family: 'Orbitron', sans-serif; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        /* Efek Glow untuk tombol */
+        .glow-btn:hover { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- KONFIGURASI SUPABASE ---
+        // Kode ini sudah otomatis menangani jika database error
+        const SUPABASE_URL = 'https://burwdynmnxxefhoeyudv.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1cndkeW5tbnh4ZWZob2V5dWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MzE2ODgsImV4cCI6MjA3OTMwNzY4OH0.zeL1Lp5nbyb5CXbhYQ_VtyR12-59CetzwngcrTclVY0';
+
+        // Helper: LocalStorage Fallback (Penyelamat jika Database Error)
+        const localStore = {
+            get: (key) => JSON.parse(localStorage.getItem(key) || 'null'),
+            set: (key, val) => localStorage.setItem(key, JSON.stringify(val))
+        };
+
+        // Mock Client untuk Auth Sederhana
+        class MockSupabaseClient {
+            constructor() { console.warn("Menggunakan Mode Lokal (Database Error/Offline)"); }
+            get auth() {
+                return {
+                    signUp: async ({ email }) => { return { data: { user: { id: 'local_' + email, email } }, error: null }; },
+                    signInWithPassword: async ({ email }) => { return { data: { user: { id: 'local_' + email, email } }, error: null }; },
+                    signOut: async () => { return { error: null }; },
+                    getSession: async () => { return { data: { session: null } }; },
+                    onAuthStateChange: (cb) => { return { data: { subscription: { unsubscribe: () => {} } } }; }
+                };
+            }
+            from() { 
+                // Mock database operations
+                return { 
+                    select: () => ({ eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }) }),
+                    insert: async () => ({ error: 'Offline' }),
+                    update: async () => ({ error: 'Offline' }),
+                    upsert: async () => ({ error: 'Offline' })
+                }; 
+            }
+        }
+
+        let supabase;
+        try { supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } 
+        catch (e) { supabase = new MockSupabaseClient(); }
+
+        // --- ICONS (SVG) ---
+        const Icons = {
+            Crown: () => <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-3-4 3-6-7zm5 16h10"/></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        };
+
+        // --- HALAMAN LOGIN / REGISTER ---
+        function AuthPage() {
+            const [isRegister, setIsRegister] = React.useState(false);
+            const [email, setEmail] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [loading, setLoading] = React.useState(false);
+            const [errorMsg, setErrorMsg] = React.useState('');
+            const [successMsg, setSuccessMsg] = React.useState('');
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                const cleanEmail = email.trim();
+                
+                try {
+                    let result;
+                    if (isRegister) result = await supabase.auth.signUp({ email: cleanEmail, password });
+                    else result = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+
+                    if (result.error) throw result.error;
+                    if (isRegister && result.data?.user && !result.data?.session) setSuccessMsg("Berhasil daftar! Silakan pindah ke tab MASUK.");
+                } catch (error) {
+                    let msg = error.message;
+                    if (msg.includes("fetch")) msg = "Mode Offline: Masuk ke penyimpanan lokal...";
+                    else if (msg.includes("Invalid login")) msg = "Email/Password salah atau belum daftar.";
+                    else if (msg.includes("already registered")) msg = "Email sudah terdaftar! Klik MASUK.";
+                    // Fallback ke mode offline jika fetch error (supaya tetap bisa main)
+                    if (msg.includes("Mode Offline")) {
+                        // Simulasi login sukses offline
+                        const mockUser = { id: 'local_' + cleanEmail, email: cleanEmail };
+                        localStorage.setItem('sb-session', JSON.stringify({ user: mockUser }));
+                        window.location.reload(); // Reload untuk trigger session
+                        return;
+                    }
+                    setErrorMsg(msg);
+                } finally { setLoading(false); }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] relative overflow-hidden">
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/20 rounded-full blur-[100px]"></div></div>
+                    <div className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10">
+                        <div className="text-center mb-6"><h1 className="text-3xl font-bold text-white font-cyber">ROYAL ACCESS</h1></div>
+                        
+                        {/* TAB MENU */}
+                        <div className="flex border-b border-white/10 mb-6">
+                            <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold transition-colors ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400 bg-white/5' : 'text-slate-500 hover:text-white'}`}>MASUK</button>
+                            <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold transition-colors ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400 bg-white/5' : 'text-slate-500 hover:text-white'}`}>DAFTAR</button>
+                        </div>
+
+                        <form onSubmit={handleAuth} className="space-y-6">
+                            {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm font-bold border border-red-500/50">{errorMsg}</div>}
+                            {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm font-bold border border-green-500/50">{successMsg}</div>}
+                            
+                            {/* INPUT EMAIL DENGAN ICON YANG SUDAH DIPERBAIKI */}
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-yellow-500 transition-colors">
+                                    <Icons.User />
+                                </div>
+                                <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500 transition-all" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
+                            </div>
+                            
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-yellow-500 transition-colors">
+                                    <Icons.Lock />
+                                </div>
+                                <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:outline-none focus:border-yellow-500 transition-all" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+                            </div>
+
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber tracking-wider glow-btn transition-transform active:scale-95">
+                                {loading ? 'LOADING...' : (isRegister ? 'DAFTAR SEKARANG' : 'MASUK LOBI')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- GAME PAGE ---
+        const SYMBOLS = [
+            { id: 1, icon: "💎", color: 'text-cyan-400', value: 50 },
+            { id: 2, icon: "👑", color: 'text-yellow-400', value: 30 },
+            { id: 3, icon: "🔮", color: 'text-pink-500', value: 20 },
+            { id: 4, icon: "💵", color: 'text-green-400', value: 10 },
+            { id: 5, icon: "✨", color: 'text-purple-400', value: 5 },
+        ];
+
+        function GamePage({ session }) {
+            const [balance, setBalance] = React.useState(0);
+            const [reels, setReels] = React.useState([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]);
+            const [isSpinning, setIsSpinning] = React.useState(false);
+            const [winMessage, setWinMessage] = React.useState('Siap Main!');
+            const [winAmount, setWinAmount] = React.useState(0);
+            const [loadingBalance, setLoadingBalance] = React.useState(true);
+            const [isOfflineMode, setIsOfflineMode] = React.useState(false);
+
+            // --- LOGIKA DATABASE PINTAR ---
+            const loadUserData = async () => {
+                setLoadingBalance(true);
+                const { user } = session;
+                
+                // Cek LocalStorage dulu (Backup)
+                const localBal = localStore.get('balance_' + user.id);
+                
+                // Coba ambil dari Supabase
+                try {
+                    const { data, error } = await supabase.from('players').select('balance').eq('id', user.id).single();
+                    
+                    if (!error && data) {
+                        setBalance(data.balance);
+                        setIsOfflineMode(false);
+                    } else if (error && (error.code === 'PGRST116' || error.message.includes('JSON'))) { 
+                        // User baru di DB
+                        await supabase.from('players').insert([{ id: user.id, balance: 10000 }]);
+                        setBalance(10000);
+                    } else {
+                        throw new Error("Database Error");
+                    }
+                } catch (err) {
+                    // JIKA DATABASE ERROR -> PAKAI LOCAL STORAGE (Mode Offline)
+                    console.log("Mode Offline Aktif:", err.message);
+                    setIsOfflineMode(true);
+                    setBalance(localBal !== null ? localBal : 10000); // Default 10k jika baru
+                    setWinMessage("Mode Lokal Aktif");
+                }
+                setLoadingBalance(false);
+            };
+
+            React.useEffect(() => { loadUserData(); }, [session]);
+
+            const saveBalance = async (newBal) => {
+                // Simpan ke LocalStorage (Selalu aman)
+                localStore.set('balance_' + session.user.id, newBal);
+                
+                // Coba simpan ke Cloud jika online
+                if (!isOfflineMode) {
+                    const { error } = await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id);
+                    if (error) setIsOfflineMode(true); // Switch ke offline jika gagal update
+                }
+            };
+            
+            const spin = () => {
+                if (balance < 100) return setWinMessage("Saldo Habis!");
+                const newBal = balance - 100;
+                setBalance(newBal); 
+                saveBalance(newBal); // Save Pintar
+
+                setIsSpinning(true); setWinMessage("Spinning..."); setWinAmount(0);
+
+                const interval = setInterval(() => setReels([
+                    SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]
+                ]), 100);
+
+                setTimeout(() => {
+                    clearInterval(interval);
+                    const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
+                    setReels(final);
+                    let win = 0; let msg = "Coba Lagi";
+                    if (final[0].id === final[1].id && final[1].id === final[2].id) { win = final[0].value * 20; msg = "JACKPOT!!!"; }
+                    else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) { win = 200; msg = "BIG WIN!"; }
+                    
+                    if (win > 0) { const wBal = newBal + win; setBalance(wBal); saveBalance(wBal); setWinAmount(win); }
+                    setWinMessage(msg); setIsSpinning(false);
+                }, 2000);
+            };
+
+            const resetSaldo = () => {
+                setBalance(10000);
+                saveBalance(10000);
+                setWinMessage("Saldo Direset!");
+            };
+
+            return (
+                <div className="min-h-screen bg-[#020617] text-white flex flex-col items-center p-4">
+                    <div className="w-full max-w-lg flex justify-between items-center p-4 bg-slate-900/80 rounded-2xl mb-8 border border-white/10 shadow-lg backdrop-blur">
+                        <div className="flex items-center gap-3">
+                            <span className="text-yellow-500 drop-shadow-lg"><Icons.Crown /></span>
+                            <div>
+                                <h2 className="font-cyber font-bold text-yellow-500 tracking-wide">ROYAL CYBER</h2>
+                                <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                                    {isOfflineMode ? <span className="w-2 h-2 bg-red-500 rounded-full"></span> : <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
+                                    {session.user.email}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right bg-black/30 px-3 py-1 rounded-lg border border-white/5">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider">Saldo</div>
+                                <div className="text-xl font-cyber font-bold text-white flex items-center gap-2 justify-end">
+                                    {loadingBalance ? <span className="animate-pulse text-sm">...</span> : balance.toLocaleString()}
+                                    <button onClick={resetSaldo} className="bg-slate-700 hover:bg-slate-600 p-1.5 rounded-md text-white transition-colors" title="Reset Saldo"><Icons.Refresh/></button>
+                                </div>
+                            </div>
+                            <button onClick={() => { localStorage.removeItem('sb-session'); supabase.auth.signOut(); window.location.reload(); }} className="p-2.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"><Icons.LogOut /></button>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-lg bg-gradient-to-b from-yellow-600 via-yellow-500 to-yellow-800 p-1 rounded-3xl shadow-[0_0_60px_rgba(234,179,8,0.3)]">
+                        <div className="bg-slate-950 rounded-[20px] p-6 border-4 border-slate-900 relative overflow-hidden text-center">
+                            <div className="flex justify-between gap-2 mb-6">
+                                {reels.map((s, i) => (
+                                    <div key={i} className="flex-1 h-32 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-center text-4xl shadow-[inset_0_0_20px_black]">
+                                        <span className={`filter drop-shadow-xl ${isSpinning ? 'animate-pulse blur-[2px]' : ''}`}>{s.icon}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="h-12 mb-4 flex items-center justify-center">
+                                {winAmount > 0 ? <div className="text-yellow-400 font-black text-3xl font-cyber animate-bounce drop-shadow-lg">+{winAmount}</div> : <div className="text-slate-500 text-lg font-light tracking-widest">{winMessage}</div>}
+                            </div>
+                            <button onClick={spin} disabled={isSpinning || loadingBalance} className={`w-full py-4 rounded-xl font-black text-2xl tracking-[0.2em] font-cyber transition-all transform active:scale-95 ${isSpinning ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-[0_0_30px_rgba(124,58,237,0.5)] hover:brightness-110'}`}>
+                                {isSpinning ? '...' : 'PUTAR (100)'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [session, setSession] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+            React.useEffect(() => {
+                // Cek session offline dulu
+                const localSession = JSON.parse(localStorage.getItem('sb-session'));
+                if(localSession) {
+                    setSession(localSession);
+                    setLoading(false);
+                } else {
+                    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setSession(session); });
+                    return () => subscription.unsubscribe();
+                }
+            }, []);
+            if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-yellow-500 animate-pulse font-cyber tracking-widest">LOADING SYSTEM...</div>;
+            return <div>{!session ? <AuthPage /> : <GamePage session={session} />}</div>;
+        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
