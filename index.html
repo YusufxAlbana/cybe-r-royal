@@ -25,21 +25,23 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Cropper Styles */
+        /* Cropper Styles - LEBIH TERANG */
         .crop-wrapper {
             position: relative;
             width: 280px;
             height: 280px;
             margin: 0 auto;
-            background: #000; /* Background hitam untuk area kosong */
+            /* Background transparan, bukan hitam */
+            background: transparent; 
         }
-        /* Masking Lingkaran di luar area crop */
+        /* Masking Lingkaran di luar area crop - Dibuat sangat transparan (0.3) */
         .crop-overlay {
             position: absolute;
             inset: 0;
             border-radius: 50%;
             border: 4px solid #eab308;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); /* Gelapkan area luar */
+            /* Shadow sangat tipis agar foto di luar lingkaran tetap terlihat jelas */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); 
             z-index: 20;
             pointer-events: none;
         }
@@ -107,7 +109,7 @@
             ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20L4 10h16l-8 10z"/></svg>
         };
 
-        // --- IMAGE CROPPER (SMART FIT) ---
+        // --- IMAGE CROPPER (BRIGHTER VERSION) ---
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -116,22 +118,17 @@
             const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
             const imgRef = React.useRef(null);
             
-            const CONTAINER_SIZE = 280; // Ukuran kotak crop di layar
+            const CONTAINER_SIZE = 280; 
 
-            // LOGIKA PENTING: Auto Fit Gambar ke Lingkaran
             React.useEffect(() => {
                 const img = new Image();
                 img.src = imageSrc;
                 img.onload = () => {
-                    // Cari zoom minimum agar gambar menutupi (cover) seluruh lingkaran
                     const widthRatio = CONTAINER_SIZE / img.naturalWidth;
                     const heightRatio = CONTAINER_SIZE / img.naturalHeight;
-                    
-                    // Kita pilih rasio yang LEBIH BESAR supaya tidak ada celah kosong (object-fit: cover)
                     const fitZoom = Math.max(widthRatio, heightRatio);
-                    
                     setZoom(fitZoom);
-                    setMinZoom(fitZoom * 0.5); // Beri sedikit ruang untuk zoom out
+                    setMinZoom(fitZoom * 0.5); 
                 };
             }, [imageSrc]);
 
@@ -141,7 +138,6 @@
             
             const handleSave = () => {
                 const canvas = document.createElement('canvas');
-                // Output resolusi 300x300 (Cukup tajam untuk avatar, size kecil)
                 const size = 300; 
                 canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d');
@@ -159,14 +155,12 @@
                     ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
                     ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
                 }
-                // Kompresi ke JPEG 70% agar ringan di Database
                 onCrop(canvas.toDataURL('image/jpeg', 0.7));
             };
 
             return (
-                // Ubah bg-black/90 menjadi bg-black/70 atau bg-slate-900/80 backdrop-blur-md agar lebih terang
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
-                    <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
+                    <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4 text-center">Sesuaikan Foto</h3>
                         <div className="flex justify-center mb-6 select-none">
                             <div className="crop-wrapper">
@@ -177,7 +171,7 @@
                             </div>
                         </div>
                         <div className="mb-6 px-4"><input type="range" min={minZoom} max={minZoom * 5} step={minZoom / 20} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb"/></div>
-                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-bold flex justify-center gap-2 hover:bg-slate-700"><Icons.X/> Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400"><Icons.Check/> Simpan</button></div>
+                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-700 text-white font-bold flex justify-center gap-2 hover:bg-slate-600"><Icons.X/> Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400"><Icons.Check/> Simpan</button></div>
                     </div>
                 </div>
             );
