@@ -25,7 +25,6 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Hide Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -38,20 +37,55 @@
         
         /* GAME STYLES */
         .wheel-container { transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .slot-reel-container { mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent); }
-        .slot-symbol { transition: transform 0.1s linear; }
-        .slot-spinning .slot-symbol { animation: slot-spin 0.1s infinite linear; }
-        @keyframes slot-spin { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+        
+        /* Slot 5x3 Styles */
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            background: #1e293b;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #fbbf24;
+            box-shadow: inset 0 0 20px #000;
+        }
+        .slot-reel {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+            height: 240px; /* 3 rows x 80px approx */
+            background: #0f172a;
+            border-radius: 4px;
+        }
+        .slot-cell {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            background: linear-gradient(to bottom, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-radius: 4px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        
+        /* Animasi Big Win */
+        @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
+        @keyframes coin-fall { 0% { transform: translateY(-100vh) rotate(0deg); } 100% { transform: translateY(100vh) rotate(360deg); } }
 
-        /* Card Flip Improved */
+        .big-win-overlay { animation: explode 0.5s ease-out forwards; }
+        .shake-screen { animation: shake 0.5s ease-in-out; }
+        .coin { position: absolute; width: 30px; height: 30px; background: gold; border-radius: 50%; border: 2px solid orange; animation: coin-fall 2s linear infinite; z-index: 100; }
+        
+        /* HighLow Card */
         .highlow-card { perspective: 1000px; }
         .highlow-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
         .highlow-card.flipped .highlow-card-inner { transform: rotateY(180deg); }
         .highlow-card-front, .highlow-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 1rem; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .highlow-card-front { background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #334155; }
         .highlow-card-back { background: linear-gradient(135deg, #eab308, #ca8a04); transform: rotateY(180deg); color: black; font-weight: bold; font-size: 3rem; border: 2px solid #fef08a; }
-        
-        /* Result Colors for Card */
         .highlow-card-back.win { background: linear-gradient(135deg, #22c55e, #15803d); border-color: #86efac; color: white; }
         .highlow-card-back.lose { background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #fca5a5; color: white; }
     </style>
@@ -228,40 +262,127 @@
             );
         }
 
-        // --- GAMES ---
+        // --- GAME 1: CYBER SLOTS (5x3 + Big Win) ---
         function GameSlots({ balance, updateBalance, setWinMessage }) {
-            const SYMBOLS = [{id:1,icon:"💎",val:50},{id:2,icon:"👑",val:30},{id:3,icon:"🔮",val:20},{id:4,icon:"💵",val:10},{id:5,icon:"✨",val:5}];
-            const [reels, setReels] = React.useState([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]);
+            // Symbols 
+            const SYMBOLS = [
+                {id:'Z', icon:'⚡', val:100, color:'text-yellow-400'}, // Zeus
+                {id:'7', icon:'7️⃣', val:50, color:'text-red-500'},
+                {id:'D', icon:'💎', val:20, color:'text-cyan-400'},
+                {id:'K', icon:'👑', val:10, color:'text-purple-400'},
+                {id:'C', icon:'🍒', val:5, color:'text-pink-500'}
+            ];
+            
+            // State untuk 5 kolom, masing-masing 3 baris
+            // Kita simpan sebagai array of arrays: [[s1,s2,s3], [s1,s2,s3], ...]
+            const [grid, setGrid] = React.useState(Array(5).fill([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]));
             const [isSpinning, setIsSpinning] = React.useState(false);
             const [winAmount, setWinAmount] = React.useState(0);
             const [isAuto, setIsAuto] = React.useState(false);
+            const [showBigWin, setShowBigWin] = React.useState(false);
             const autoRef = React.useRef(isAuto);
+            
             React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]);
+
+            // Helper: Get random symbol
+            const getRandomSymbol = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+            
+            // Helper: Generate random reel (3 symbols)
+            const getRandomReel = () => [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+
             const spin = async () => {
-                if (balance < 100) { setIsAuto(false); return setWinMessage("Saldo Habis!"); }
-                updateBalance(balance - 100);
+                if (balance < 200) { setIsAuto(false); return setWinMessage("Saldo Habis! (Min 200)"); }
+                setShowBigWin(false);
+                updateBalance(balance - 200);
                 setIsSpinning(true); setWinAmount(0); setWinMessage("Spinning...");
-                const interval = setInterval(() => setReels([SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]]), 100);
-                await new Promise(r => setTimeout(r, 2000)); clearInterval(interval);
-                const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
-                setReels(final);
+                
+                // Animasi spin
+                const interval = setInterval(() => {
+                    setGrid(Array(5).fill(0).map(() => getRandomReel()));
+                }, 100);
+
+                await new Promise(r => setTimeout(r, 2000));
+                clearInterval(interval);
+                
+                // Hasil Akhir (5 cols x 3 rows)
+                const finalGrid = Array(5).fill(0).map(() => getRandomReel());
+                setGrid(finalGrid);
+                
+                // Cek Kemenangan (Sederhana: Cek baris tengah 3-5 simbol sama)
+                // Baris tengah adalah index 1 di setiap kolom
+                const midRow = finalGrid.map(col => col[1]);
                 let win = 0;
-                if (final[0].id === final[1].id && final[1].id === final[2].id) win = final[0].val * 20;
-                else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) win = 50; 
-                if (win > 0) { updateBalance(balance - 100 + win); setWinAmount(win); setWinMessage(`Win +${win}!`); } 
-                else { setWinMessage("Zonk! Coba Lagi."); }
+                
+                // Cek 5 sama
+                if (midRow.every(s => s.id === midRow[0].id)) win = midRow[0].val * 100;
+                // Cek 4 sama (dari kiri)
+                else if (midRow.slice(0,4).every(s => s.id === midRow[0].id)) win = midRow[0].val * 20;
+                // Cek 3 sama (dari kiri)
+                else if (midRow.slice(0,3).every(s => s.id === midRow[0].id)) win = midRow[0].val * 5;
+
+                // Cek Big Win (> 5000 chip)
+                if (win >= 5000) {
+                    setShowBigWin(true);
+                    setWinMessage("SENSATIONAL!!!");
+                    // Efek getar layar
+                    if(navigator.vibrate) navigator.vibrate(500);
+                } else if (win > 0) {
+                    setWinMessage(`Win +${win}`);
+                } else {
+                    setWinMessage("Zonk. Coba Lagi.");
+                }
+
+                if (win > 0) updateBalance(balance - 200 + win);
+                setWinAmount(win);
+                
                 setIsSpinning(false);
                 if (autoRef.current) setTimeout(spin, 1000);
             };
+
             React.useEffect(() => { if(isAuto && !isSpinning) spin(); }, [isAuto]);
+
             return (
-                <div className="w-full max-w-lg bg-gradient-to-b from-yellow-600 via-yellow-500 to-yellow-800 p-1 rounded-3xl shadow-[0_0_60px_rgba(234,179,8,0.3)] mx-auto">
-                    <div className="bg-slate-950 rounded-[20px] p-6 border-4 border-slate-900 text-center relative overflow-hidden slot-reel-container">
-                        <div className="flex justify-between gap-2 mb-6">
-                            {reels.map((s, i) => (<div key={i} className={`flex-1 h-32 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-center text-4xl shadow-inner overflow-hidden relative ${isSpinning ? 'slot-spinning' : ''}`}><div className="slot-symbol absolute top-0 left-0 w-full h-full flex items-center justify-center"><span>{s.icon}</span></div><div className="slot-symbol absolute top-full left-0 w-full h-full flex items-center justify-center"><span>{s.icon}</span></div></div>))}
+                <div className={`relative w-full max-w-2xl mx-auto ${showBigWin ? 'shake-screen' : ''}`}>
+                    {/* BIG WIN OVERLAY */}
+                    {showBigWin && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 rounded-3xl big-win-overlay pointer-events-none">
+                            <h1 className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,1)] font-cyber mb-2">BIG WIN</h1>
+                            <div className="text-4xl font-bold text-white animate-bounce">+{winAmount.toLocaleString()}</div>
+                            {/* Koin Jatuh (Simulasi CSS) */}
+                            <div className="absolute top-0 left-10 coin" style={{animationDelay:'0s'}}></div>
+                            <div className="absolute top-0 right-20 coin" style={{animationDelay:'0.5s'}}></div>
+                            <div className="absolute top-0 left-1/2 coin" style={{animationDelay:'1s'}}></div>
                         </div>
-                        <div className="h-12 mb-4 flex items-center justify-center font-bold text-xl font-cyber">{winAmount > 0 ? <span className="text-yellow-400 animate-bounce">+{winAmount}</span> : <span className="text-slate-400">{isSpinning ? '...' : ''}</span>}</div>
-                        <div className="flex gap-2"><button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400'}`}>{isAuto?'STOP':'AUTO'}</button><button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110 disabled:opacity-50">SPIN</button></div>
+                    )}
+
+                    <div className="bg-gradient-to-b from-yellow-600 via-purple-900 to-black p-1.5 rounded-3xl shadow-[0_0_50px_rgba(234,179,8,0.4)]">
+                        <div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden">
+                            
+                            {/* SLOT GRID 5x3 */}
+                            <div className="slot-grid mb-6">
+                                {grid.map((reel, i) => (
+                                    <div key={i} className="slot-reel">
+                                        {reel.map((s, j) => (
+                                            <div key={j} className={`slot-cell ${isSpinning ? 'blur-[2px]' : ''}`}>
+                                                <span className={`filter drop-shadow-md ${s.color}`}>{s.icon}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                                {/* Payline Indicator (Tengah) */}
+                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 pointer-events-none"></div>
+                            </div>
+
+                            <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/10 mb-4">
+                                <div className="text-xs text-slate-400">Win: <span className="text-yellow-400 text-lg font-bold block">{winAmount}</span></div>
+                                <div className="text-xs text-slate-400 text-right">Bet: <span className="text-white text-lg font-bold block">200</span></div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto?'STOP':'AUTO'}</button>
+                                <button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-yellow-500 to-orange-600 text-black shadow-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-xl tracking-widest">SPIN</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
@@ -311,7 +432,6 @@
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30 text-yellow-400 filter drop-shadow-lg">
                             <Icons.MapPin className="w-12 h-12 transform rotate-180 fill-current" />
                         </div>
-                        
                         <div className="w-full h-full rounded-full border-8 border-slate-800 relative overflow-hidden wheel-container shadow-[0_0_30px_rgba(0,0,0,0.5)]" style={{ transform: `rotate(${rotation}deg)`, background: `conic-gradient(#ef4444 0% 12.5%, #3b82f6 12.5% 25%, #ef4444 25% 37.5%, #22c55e 37.5% 50%, #ef4444 50% 62.5%, #eab308 62.5% 75%, #ef4444 75% 87.5%, #a855f7 87.5% 100%)` }}>
                             {segments.map((seg, i) => (
                                 <div key={i} className="absolute w-full h-full top-0 left-0" style={{ transform: `rotate(${i * 45 + 22.5}deg)` }}> 
@@ -339,78 +459,38 @@
             const guess = (isHigher) => {
                 if (balance < 200) return setWinMessage("Butuh 200 Chip!");
                 if (isLoading) return;
-                
-                updateBalance(balance - 200);
-                setIsLoading(true);
-                setStatus('Menganalisis...');
-                setWinMessage('...');
-                setResultClass(''); // Reset warna
-
-                const next = Math.floor(Math.random()*13)+1;
-                setNextNum(next);
-
-                // Delay untuk animasi kartu flip
+                updateBalance(balance - 200); setIsLoading(true); setStatus('Menganalisis...'); setWinMessage('...'); setResultClass('');
+                const next = Math.floor(Math.random()*13)+1; setNextNum(next);
                 setTimeout(() => {
                     setIsFlipped(true);
-                    
-                    // Setelah flip selesai, tentukan hasil
                     setTimeout(() => {
                         let win = false;
-                        if (isHigher && next > currentNum) win = true;
-                        if (!isHigher && next < currentNum) win = true;
-
-                        if (win) { 
-                            updateBalance(balance - 200 + 400); 
-                            setStatus('BENAR!'); 
-                            setWinMessage("Win +400");
-                            setResultClass('win'); 
-                        } else { 
-                            setStatus('SALAH!'); 
-                            setWinMessage("Kalah -200");
-                            setResultClass('lose'); 
-                        }
-
-                        // Kunci tombol tetap aktif sampai reset selesai (Mencegah spam)
+                        if (isHigher && next > currentNum) win = true; if (!isHigher && next < currentNum) win = true;
+                        if (win) { updateBalance(balance - 200 + 400); setStatus('BENAR!'); setWinMessage("Win +400"); setResultClass('win'); } 
+                        else { setStatus('SALAH!'); setWinMessage("Kalah -200"); setResultClass('lose'); }
                         setTimeout(() => {
                             setIsFlipped(false);
                             setTimeout(() => {
-                                setCurrentNum(next);
-                                setNextNum(null);
-                                setStatus('Tebak Angka Berikutnya');
-                                setResultClass('');
-                                setIsLoading(false); // BARU DIBUKA KUNCINYA DISINI
+                                setCurrentNum(next); setNextNum(null); setStatus('Tebak Angka Berikutnya'); setResultClass(''); setIsLoading(false);
                             }, 800); 
-                        }, 2000); // Lama melihat hasil
-                    }, 600); // Waktu tunggu flip
-                }, 500); // Jeda awal
+                        }, 2000);
+                    }, 600);
+                }, 500);
             };
 
             return (
                 <div className="text-center p-8 bg-slate-900/80 rounded-3xl border border-blue-500/30 max-w-md mx-auto shadow-[0_0_30px_rgba(59,130,246,0.2)]">
                     <h3 className="text-blue-400 font-cyber text-2xl mb-6 tracking-wider">DECRYPT_CODE</h3>
-                    
                     <div className="flex justify-center items-center gap-8 mb-8 h-48">
-                        {/* Kartu Saat Ini */}
-                        <div className="w-32 h-48 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl border-2 border-slate-600 flex items-center justify-center shadow-lg">
-                            <span className="text-6xl font-bold font-cyber text-white">{currentNum}</span>
-                        </div>
-                        
-                        {/* Kartu Berikutnya (Flip Card) */}
+                        <div className="w-32 h-48 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl border-2 border-slate-600 flex items-center justify-center shadow-lg"><span className="text-6xl font-bold font-cyber text-white">{currentNum}</span></div>
                         <div className={`w-32 h-48 highlow-card relative ${isFlipped ? 'flipped' : ''}`}>
                             <div className="highlow-card-inner">
-                                <div className="highlow-card-front flex flex-col items-center justify-center">
-                                    <Icons.Lock className="w-12 h-12 text-slate-500 mb-2" />
-                                    <span className="text-sm text-slate-400 font-cyber">UNKNOWN</span>
-                                </div>
-                                <div className={`highlow-card-back ${resultClass}`}>
-                                    {nextNum}
-                                </div>
+                                <div className="highlow-card-front flex flex-col items-center justify-center"><Icons.Lock className="w-12 h-12 text-slate-500 mb-2" /><span className="text-sm text-slate-400 font-cyber">UNKNOWN</span></div>
+                                <div className={`highlow-card-back ${resultClass}`}>{nextNum}</div>
                             </div>
                         </div>
                     </div>
-
                     <p className="text-slate-300 mb-6 h-6 font-bold">{status}</p>
-                    
                     <div className="flex gap-4 justify-center">
                         <button onClick={() => guess(false)} disabled={isLoading} className="flex-1 py-4 bg-red-600/80 rounded-xl font-bold font-cyber hover:bg-red-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-red-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.ArrowDown/> LEBIH KECIL</button>
                         <button onClick={() => guess(true)} disabled={isLoading} className="flex-1 py-4 bg-green-600/80 rounded-xl font-bold font-cyber hover:bg-green-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-green-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.TrendingUp/> LEBIH BESAR</button>
@@ -567,7 +647,7 @@
                     if (!activeGame) content = <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} />;
                     else {
                         content = (
-                            <div className="flex flex-col items-center mt-8"> {/* Tambah margin top disini */}
+                            <div className="flex flex-col items-center mt-8">
                                 <button onClick={() => { setActiveGame(null); setWinMessage("Pilih Game"); }} className="mb-6 px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white flex items-center gap-2 transition-colors shadow-md border border-white/5"><Icons.ArrowLeft /> KEMBALI KE LOBBY</button>
                                 {activeGame === 'slot' && <GameSlots balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 {activeGame === 'wheel' && <GameWheel balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
