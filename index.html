@@ -25,13 +25,40 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Cropper & Game Styles */
-        .crop-wrapper { position: relative; width: 280px; height: 280px; margin: 0 auto; }
-        .crop-container { position: absolute; inset: 0; border-radius: 50%; border: 4px solid #eab308; box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); z-index: 20; pointer-events: none; }
-        .drag-area { width: 100%; height: 100%; cursor: grab; overflow: hidden; position: relative; border-radius: 10px; }
-        .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #eab308; cursor: pointer; border-radius: 50%; }
+        /* Cropper Styles */
+        .crop-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto;
+            background: #000; /* Background hitam untuk area kosong */
+        }
+        /* Masking Lingkaran di luar area crop */
+        .crop-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 4px solid #eab308;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); /* Gelapkan area luar */
+            z-index: 20;
+            pointer-events: none;
+        }
+        .drag-area {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            overflow: hidden;
+            position: relative;
+        }
+        .drag-area:active { cursor: grabbing; }
         
-        /* Wheel Animation */
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            background: #eab308;
+            cursor: pointer;
+            border-radius: 50%;
+        }
         .wheel-container { transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); }
     </style>
 </head>
@@ -80,7 +107,7 @@
             ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20L4 10h16l-8 10z"/></svg>
         };
 
-        // --- IMAGE CROPPER ---
+        // --- IMAGE CROPPER (SMART FIT) ---
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -88,54 +115,68 @@
             const [dragging, setDragging] = React.useState(false);
             const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
             const imgRef = React.useRef(null);
-            const CONTAINER_SIZE = 280;
+            
+            const CONTAINER_SIZE = 280; // Ukuran kotak crop di layar
 
+            // LOGIKA PENTING: Auto Fit Gambar ke Lingkaran
             React.useEffect(() => {
                 const img = new Image();
                 img.src = imageSrc;
                 img.onload = () => {
+                    // Cari zoom minimum agar gambar menutupi (cover) seluruh lingkaran
                     const widthRatio = CONTAINER_SIZE / img.naturalWidth;
                     const heightRatio = CONTAINER_SIZE / img.naturalHeight;
-                    const initialZoom = Math.max(widthRatio, heightRatio);
-                    setZoom(initialZoom);
-                    setMinZoom(initialZoom * 0.5);
+                    
+                    // Kita pilih rasio yang LEBIH BESAR supaya tidak ada celah kosong (object-fit: cover)
+                    const fitZoom = Math.max(widthRatio, heightRatio);
+                    
+                    setZoom(fitZoom);
+                    setMinZoom(fitZoom * 0.5); // Beri sedikit ruang untuk zoom out
                 };
             }, [imageSrc]);
 
             const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseUp = () => setDragging(false);
+            
             const handleSave = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 400; canvas.height = 400;
+                // Output resolusi 300x300 (Cukup tajam untuk avatar, size kecil)
+                const size = 300; 
+                canvas.width = size; canvas.height = size;
                 const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 400, 400);
+
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+                
                 if(imgRef.current) {
-                    const scaleFactor = 400 / CONTAINER_SIZE;
+                    const scaleFactor = size / CONTAINER_SIZE;
                     const imgWidth = imgRef.current.naturalWidth * zoom * scaleFactor;
                     const imgHeight = imgRef.current.naturalHeight * zoom * scaleFactor;
-                    const drawX = (400 - imgWidth) / 2 + (position.x * scaleFactor);
-                    const drawY = (400 - imgHeight) / 2 + (position.y * scaleFactor);
-                    ctx.save(); ctx.beginPath(); ctx.arc(200, 200, 200, 0, Math.PI * 2); ctx.clip();
+                    
+                    const drawX = (size - imgWidth) / 2 + (position.x * scaleFactor);
+                    const drawY = (size - imgHeight) / 2 + (position.y * scaleFactor);
+
+                    ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
                     ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
                 }
-                onCrop(canvas.toDataURL('image/jpeg', 0.85));
+                // Kompresi ke JPEG 70% agar ringan di Database
+                onCrop(canvas.toDataURL('image/jpeg', 0.7));
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
                     <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4 text-center">Sesuaikan Foto</h3>
                         <div className="flex justify-center mb-6 select-none">
                             <div className="crop-wrapper">
-                                <div className="crop-container"></div>
-                                <div className="drag-area" onMouseDown={handleMouseDown}>
+                                <div className="crop-overlay"></div>
+                                <div className="drag-area" onMouseDown={handleMouseDown} onTouchStart={(e)=>{setDragging(true); setLastPos({x:e.touches[0].clientX, y:e.touches[0].clientY})}}>
                                     <img ref={imgRef} src={imageSrc} className="absolute max-w-none pointer-events-none transition-transform duration-75" style={{ transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${zoom})`, left: '50%', top: '50%' }}/>
                                 </div>
                             </div>
                         </div>
-                        <div className="mb-6 px-4"><input type="range" min={minZoom} max={minZoom * 5} step={minZoom / 10} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb"/></div>
-                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-bold flex justify-center gap-2 hover:bg-slate-700">Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400">Simpan</button></div>
+                        <div className="mb-6 px-4"><input type="range" min={minZoom} max={minZoom * 5} step={minZoom / 20} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb"/></div>
+                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-bold flex justify-center gap-2 hover:bg-slate-700"><Icons.X/> Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400"><Icons.Check/> Simpan</button></div>
                     </div>
                 </div>
             );
@@ -196,8 +237,6 @@
         }
 
         // --- GAMES ---
-
-        // 1. CYBER SLOTS
         function GameSlots({ balance, updateBalance, setWinMessage }) {
             const SYMBOLS = [{id:1,icon:"💎",val:50},{id:2,icon:"👑",val:30},{id:3,icon:"🔮",val:20},{id:4,icon:"💵",val:10},{id:5,icon:"✨",val:5}];
             const [reels, setReels] = React.useState([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]);
@@ -205,95 +244,63 @@
             const [winAmount, setWinAmount] = React.useState(0);
             const [isAuto, setIsAuto] = React.useState(false);
             const autoRef = React.useRef(isAuto);
-
             React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]);
-
             const spin = async () => {
                 if (balance < 100) { setIsAuto(false); return setWinMessage("Saldo Habis!"); }
                 updateBalance(balance - 100);
                 setIsSpinning(true); setWinAmount(0); setWinMessage("Spinning...");
-                
                 const interval = setInterval(() => setReels([SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]]), 100);
                 await new Promise(r => setTimeout(r, 1000)); clearInterval(interval);
-                
                 const final = [SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)], SYMBOLS[Math.floor(Math.random()*5)]];
                 setReels(final);
-                
                 let win = 0;
                 if (final[0].id === final[1].id && final[1].id === final[2].id) win = final[0].val * 20;
-                else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) win = 50; // Small win
-                
-                if (win > 0) { 
-                    updateBalance(balance - 100 + win); setWinAmount(win); setWinMessage(`Win +${win}!`); 
-                } else {
-                    setWinMessage("Zonk! Coba Lagi.");
-                }
+                else if (final[0].id === final[1].id || final[1].id === final[2].id || final[0].id === final[2].id) win = 50; 
+                if (win > 0) { updateBalance(balance - 100 + win); setWinAmount(win); setWinMessage(`Win +${win}!`); } 
+                else { setWinMessage("Zonk! Coba Lagi."); }
                 setIsSpinning(false);
                 if (autoRef.current) setTimeout(spin, 500);
             };
-
             React.useEffect(() => { if(isAuto && !isSpinning) spin(); }, [isAuto]);
-
             return (
                 <div className="w-full max-w-lg bg-gradient-to-b from-yellow-600 via-yellow-500 to-yellow-800 p-1 rounded-3xl shadow-[0_0_60px_rgba(234,179,8,0.3)] mx-auto">
                     <div className="bg-slate-950 rounded-[20px] p-6 border-4 border-slate-900 text-center">
                         <div className="flex justify-between gap-2 mb-6">
-                            {reels.map((s, i) => (
-                                <div key={i} className="flex-1 h-32 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-center text-4xl shadow-[inset_0_0_20px_black]">
-                                    <span className={isSpinning ? 'animate-pulse blur-[2px]' : ''}>{s.icon}</span>
-                                </div>
-                            ))}
+                            {reels.map((s, i) => (<div key={i} className="flex-1 h-32 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-center text-4xl shadow-inner"><span className={isSpinning ? 'animate-pulse blur-sm' : ''}>{s.icon}</span></div>))}
                         </div>
-                        <div className="h-12 mb-4 flex items-center justify-center font-bold text-xl">
-                            {winAmount > 0 ? <span className="text-yellow-400 animate-bounce">+{winAmount}</span> : <span className="text-slate-400">{isSpinning ? '...' : ' '}</span>}
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400'}`}>{isAuto?'STOP':'AUTO'}</button>
-                            <button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110 disabled:opacity-50">SPIN</button>
-                        </div>
+                        <div className="h-12 mb-4 flex items-center justify-center font-bold text-xl">{winAmount > 0 ? <span className="text-yellow-400 animate-bounce">+{winAmount}</span> : <span className="text-slate-400">{isSpinning ? '...' : ''}</span>}</div>
+                        <div className="flex gap-2"><button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400'}`}>{isAuto?'STOP':'AUTO'}</button><button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:brightness-110 disabled:opacity-50">SPIN</button></div>
                     </div>
                 </div>
             );
         }
 
-        // 2. NEON WHEEL
         function GameWheel({ balance, updateBalance, setWinMessage }) {
             const [rotation, setRotation] = React.useState(0);
             const [isSpinning, setIsSpinning] = React.useState(false);
-            const multipliers = [0, 2, 0, 5, 0, 10, 0, 0.5]; // 8 segments
-
+            const multipliers = [0, 2, 0, 5, 0, 10, 0, 0.5];
             const spin = async () => {
                 if (balance < 500) return setWinMessage("Butuh 500 Chip!");
                 updateBalance(balance - 500);
                 setIsSpinning(true); setWinMessage("Putar...");
-                
-                const randomDeg = Math.floor(3600 + Math.random() * 360); // Min 10 spins
+                const randomDeg = Math.floor(3600 + Math.random() * 360);
                 setRotation(rotation + randomDeg);
-
                 setTimeout(() => {
                     const finalAngle = (rotation + randomDeg) % 360;
                     const index = Math.floor((360 - finalAngle) / (360/8)) % 8;
                     const mult = multipliers[index];
                     const win = 500 * mult;
-                    
                     updateBalance(balance - 500 + win);
-                    if(win > 0) setWinMessage(`Dapat x${mult} (+${win})`);
-                    else setWinMessage("Zonk! Coba lagi.");
+                    if(win > 0) setWinMessage(`Dapat x${mult} (+${win})`); else setWinMessage("Zonk! Coba lagi.");
                     setIsSpinning(false);
                 }, 4000);
             };
-
             return (
                 <div className="flex flex-col items-center">
                     <div className="relative w-64 h-64 mb-8">
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-20 text-yellow-500 filter drop-shadow-lg"><Icons.ArrowDown /></div>
                         <div className="w-full h-full rounded-full border-4 border-yellow-500 relative overflow-hidden bg-slate-800 wheel-container" style={{ transform: `rotate(${rotation}deg)` }}>
-                            {multipliers.map((m, i) => (
-                                <div key={i} className="absolute w-full h-full text-center pt-2 font-bold text-xs" style={{ transform: `rotate(${i * 45}deg)` }}>
-                                    <span className="bg-black/50 px-1 rounded">{m}x</span>
-                                    <div className="w-0.5 h-1/2 bg-white/10 absolute top-0 left-1/2 -translate-x-1/2 -z-10 origin-bottom"></div>
-                                </div>
-                            ))}
+                            {multipliers.map((m, i) => (<div key={i} className="absolute w-full h-full text-center pt-2 font-bold text-xs" style={{ transform: `rotate(${i * 45}deg)` }}><span className="bg-black/50 px-1 rounded">{m}x</span><div className="w-0.5 h-1/2 bg-white/10 absolute top-0 left-1/2 -translate-x-1/2 -z-10 origin-bottom"></div></div>))}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-4 h-4 bg-yellow-500 rounded-full shadow-lg"></div></div>
                     </div>
@@ -302,54 +309,35 @@
             );
         }
 
-        // 3. HACKER HIGH/LOW
         function GameHighLow({ balance, updateBalance, setWinMessage }) {
             const [currentNum, setCurrentNum] = React.useState(Math.floor(Math.random()*13)+1);
             const [nextNum, setNextNum] = React.useState(null);
             const [status, setStatus] = React.useState('Tebak Angka Berikutnya');
-
             const guess = (isHigher) => {
                 if (balance < 200) return setWinMessage("Butuh 200 Chip!");
                 const next = Math.floor(Math.random()*13)+1;
                 setNextNum(next);
-                
                 let win = false;
                 if (isHigher && next > currentNum) win = true;
                 if (!isHigher && next < currentNum) win = true;
-
-                if (win) {
-                    updateBalance(balance + 200); // Modal 200 + Win 200 = 400 total but only add profit logic
-                    setStatus(`BENAR! Angka: ${next}`);
-                    setWinMessage("Win +200");
-                } else {
-                    updateBalance(balance - 200);
-                    setStatus(`SALAH! Angka: ${next}`);
-                    setWinMessage("Kalah -200");
-                }
+                if (win) { updateBalance(balance + 200); setStatus(`BENAR! Angka: ${next}`); setWinMessage("Win +200"); } 
+                else { updateBalance(balance - 200); setStatus(`SALAH! Angka: ${next}`); setWinMessage("Kalah -200"); }
                 setTimeout(() => { setCurrentNum(next); setNextNum(null); }, 1500);
             };
-
             return (
                 <div className="text-center p-6 bg-slate-800/50 rounded-2xl border border-green-500/30">
                     <h3 className="text-green-400 font-mono text-xl mb-4">DECRYPT_CODE.EXE</h3>
                     <div className="text-6xl font-bold text-white mb-2 font-mono">{nextNum !== null ? nextNum : currentNum}</div>
                     <p className="text-slate-400 mb-8 h-6">{status}</p>
-                    <div className="flex gap-4 justify-center">
-                        <button onClick={() => guess(false)} className="px-6 py-3 bg-red-600 rounded font-bold hover:bg-red-500">LEBIH KECIL</button>
-                        <button onClick={() => guess(true)} className="px-6 py-3 bg-green-600 rounded font-bold hover:bg-green-500">LEBIH BESAR</button>
-                    </div>
+                    <div className="flex gap-4 justify-center"><button onClick={() => guess(false)} className="px-6 py-3 bg-red-600 rounded font-bold hover:bg-red-500">LEBIH KECIL</button><button onClick={() => guess(true)} className="px-6 py-3 bg-green-600 rounded font-bold hover:bg-green-500">LEBIH BESAR</button></div>
                     <p className="mt-4 text-xs text-slate-500">Biaya: 200 Chip | Hadiah: 400 Chip</p>
                 </div>
             );
         }
 
-        // --- LOBBY COMPONENT ---
+        // --- LOBBY & DASHBOARD ---
         function Lobby({ setGame }) {
-            const games = [
-                { id: 'slot', name: 'Cyber Slots', icon: Icons.Play, color: 'from-yellow-600 to-red-600' },
-                { id: 'wheel', name: 'Neon Wheel', icon: Icons.Disc, color: 'from-blue-600 to-purple-600' },
-                { id: 'highlow', name: 'Code Breaker', icon: Icons.TrendingUp, color: 'from-green-600 to-emerald-800' }
-            ];
+            const games = [{ id: 'slot', name: 'Cyber Slots', icon: Icons.Play, color: 'from-yellow-600 to-red-600' }, { id: 'wheel', name: 'Neon Wheel', icon: Icons.Disc, color: 'from-blue-600 to-purple-600' }, { id: 'highlow', name: 'Code Breaker', icon: Icons.TrendingUp, color: 'from-green-600 to-emerald-800' }];
             return (
                 <div className="p-6 grid gap-4 md:grid-cols-3">
                     {games.map(g => (
@@ -362,7 +350,58 @@
             );
         }
 
-        // --- DASHBOARD ---
+        function ProfilePage({session,profileData,refreshProfile}){
+            const [email, setEmail] = React.useState(session.user.email);
+            const [password, setPassword] = React.useState('');
+            const [fullName, setFullName] = React.useState(profileData?.full_name || '');
+            const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || '');
+            const [msg, setMsg] = React.useState('');
+            const [isCropping, setIsCropping] = React.useState(false);
+            const [tempImg, setTempImg] = React.useState(null);
+            const fileRef = React.useRef(null);
+
+            const handleImageChange = (e) => {
+                if(e.target.files[0]){
+                    if (e.target.files[0].size > 5 * 1024 * 1024) return alert("Maks 5MB");
+                    const r = new FileReader();
+                    r.onload = () => { setTempImg(r.result); setIsCropping(true); };
+                    r.readAsDataURL(e.target.files[0]);
+                }
+                e.target.value = null;
+            };
+            
+            const handleUpdate = async (e) => {
+                e.preventDefault();
+                setMsg('Menyimpan...');
+                const authUpdates = { email };
+                if(password) authUpdates.password = password;
+                const { error: authError } = await supabase.auth.updateUser(authUpdates);
+                const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id);
+                if (authError || dbError) setMsg("Gagal simpan."); else { setMsg("Berhasil disimpan!"); refreshProfile(); }
+            };
+
+            return (
+                <div className="max-w-xl mx-auto p-6 relative">
+                    {isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2>
+                    <form onSubmit={handleUpdate} className="space-y-6">
+                        <div className="flex flex-col items-center gap-4">
+                            <div onClick={()=>fileRef.current.click()} className="w-32 h-32 rounded-full bg-slate-800 border-4 border-yellow-500 overflow-hidden cursor-pointer hover:opacity-80 relative group">
+                                <img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/>
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div>
+                            </div>
+                            <input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/>
+                        </div>
+                        <div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
+                        <div><label className="text-xs text-slate-400">Email</label><input value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
+                        <div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
+                        <button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>
+                        {msg && <p className="text-center text-yellow-400 text-sm">{msg}</p>}
+                    </form>
+                </div>
+            )
+        }
+
         function Dashboard({ session, onLogout }) {
             const [view, setView] = React.useState('lobby'); 
             const [activeGame, setActiveGame] = React.useState(null);
@@ -373,10 +412,8 @@
             const loadUserData = async () => {
                 try {
                     const { data, error } = await supabase.from('players').select('*').eq('id', session.user.id).single();
-                    if (data) {
-                        setBalance(data.balance);
-                        setProfileData({ full_name: data.full_name || 'Member', avatar_url: data.avatar_url });
-                    } else if (error && error.code === 'PGRST116') {
+                    if (data) { setBalance(data.balance); setProfileData({ full_name: data.full_name || 'Member', avatar_url: data.avatar_url }); }
+                    else if (error && error.code === 'PGRST116') {
                         const initData = { id: session.user.id, balance: 10000, full_name: session.user.user_metadata?.full_name||'Member', avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}` };
                         await supabase.from('players').insert([initData]);
                         setBalance(10000); setProfileData(initData);
@@ -385,19 +422,15 @@
             };
             React.useEffect(() => { loadUserData(); }, [session]);
 
-            const updateBalance = async (newBal) => {
-                setBalance(newBal);
-                await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id);
-            };
+            const updateBalance = async (newBal) => { setBalance(newBal); await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id); };
+            const handleTopUp = (amount) => { updateBalance(balance + amount); setWinMessage(`TopUp +${amount}`); setView('lobby'); };
 
             const renderContent = () => {
                 if (view === 'profile') return <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />;
-                if (view === 'topup') return <TopUpPage onTopUp={(amt) => { updateBalance(balance + amt); setWinMessage(`TopUp +${amt}`); setView('lobby'); }} />;
-                if (view === 'info') return <InfoPage />;
-                if (view === 'pola') return <PatternPage />;
-                if (view === 'feedback') return <FeedbackPage />;
-                
-                // Game Logic
+                if (view === 'topup') return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Top Up</h2><div className="grid grid-cols-2 gap-4">{[10000,50000,100000,500000].map(x=><button key={x} onClick={()=>handleTopUp(x)} className="p-4 bg-slate-800 rounded border border-slate-700 hover:border-yellow-500 text-xl font-bold">{x.toLocaleString()}</button>)}</div></div>;
+                if (view === 'info') return <div className="p-6 text-slate-300"><h2 className="text-2xl text-yellow-400 mb-4">Info</h2><p>Aplikasi Demo Casino React + Supabase.</p></div>;
+                if (view === 'pola') return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Pola Gacor</h2><div className="bg-slate-800 p-4 rounded border border-green-500/30 text-green-400">Pola Pagi: Auto 20x - Winrate 80%</div></div>;
+                if (view === 'feedback') return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Feedback</h2><textarea className="w-full bg-slate-800 p-4 rounded text-white mb-4" placeholder="Pesan..."></textarea><button onClick={()=>alert('Terkirim!')} className="px-6 py-2 bg-blue-600 rounded">Kirim</button></div>;
                 if (view === 'game') {
                     if (!activeGame) return <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} />;
                     return (
@@ -421,18 +454,7 @@
                             <div className="truncate"><div className="text-sm font-bold">{profileData.full_name}</div><div className="text-[10px] text-slate-500">ID: {session.user.email.split('@')[0]}</div></div>
                         </div>
                         <nav className="flex-1 p-4 space-y-1">
-                            {[
-                                {id:'lobby', l:'Lobby Game', i:Icons.Home},
-                                {id:'topup', l:'Top Up', i:Icons.CreditCard},
-                                {id:'pola', l:'Pola Gacor', i:Icons.Zap},
-                                {id:'info', l:'Info App', i:Icons.Info},
-                                {id:'feedback', l:'Feedback', i:Icons.Message},
-                                {id:'profile', l:'Profile', i:Icons.Settings}
-                            ].map(m => (
-                                <button key={m.id} onClick={() => { setView(m.id === 'lobby' ? 'game' : m.id); if(m.id==='lobby') setActiveGame(null); }} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id || (view==='game' && m.id==='lobby') ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}>
-                                    <m.i /> {m.l}
-                                </button>
-                            ))}
+                            {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message},{id:'profile',l:'Profile',i:Icons.Settings}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
                         </nav>
                         <div className="p-4"><button onClick={onLogout} className="w-full flex gap-2 p-2 text-red-400 hover:bg-red-900/20 rounded"><Icons.LogOut/> Keluar</button></div>
                     </aside>
@@ -444,63 +466,15 @@
                         </header>
                         <div className="p-4 md:p-8 flex-1">{renderContent()}</div>
                         <div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3">
-                            <button onClick={() => {setView('game'); setActiveGame(null);}} className="text-slate-400"><Icons.Home/></button>
-                            <button onClick={() => setView('topup')} className="text-slate-400"><Icons.CreditCard/></button>
-                            <button onClick={() => setView('profile')} className="text-slate-400"><Icons.Settings/></button>
+                            <button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button>
+                            <button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button>
+                            <button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button>
                         </div>
                     </main>
                 </div>
             );
         }
 
-        // --- PAGES STUBS ---
-        function ProfilePage({session,profileData,refreshProfile}){
-            // ... (Sama seperti kode ProfilePage sebelumnya, disingkat agar muat)
-            // Pastikan paste fungsi ProfilePage, ImageCropper, dll dari jawaban sebelumnya di sini jika perlu detail lengkapnya.
-            // Untuk demo, saya gunakan versi simplified yang memanggil komponen ImageCropper dan logika update yang sama.
-            const [fullName, setFullName] = React.useState(profileData?.full_name || '');
-            const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || '');
-            const [isCropping, setIsCropping] = React.useState(false);
-            const [tempImg, setTempImg] = React.useState(null);
-            const fileRef = React.useRef(null);
-
-            const onFile = (e) => {
-                if(e.target.files[0]){
-                    const r = new FileReader();
-                    r.onload = () => { setTempImg(r.result); setIsCropping(true); };
-                    r.readAsDataURL(e.target.files[0]);
-                }
-            };
-            
-            const saveProfile = async (e) => {
-                e.preventDefault();
-                await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id);
-                refreshProfile();
-                alert("Disimpan!");
-            };
-
-            return (
-                <div className="max-w-xl mx-auto p-6">
-                    {isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2>
-                    <form onSubmit={saveProfile} className="space-y-6">
-                        <div className="text-center">
-                            <div onClick={()=>fileRef.current.click()} className="w-32 h-32 mx-auto rounded-full bg-slate-800 border-4 border-yellow-500 overflow-hidden cursor-pointer hover:opacity-80"><img src={avatarUrl} className="w-full h-full object-cover"/></div>
-                            <input type="file" ref={fileRef} onChange={onFile} className="hidden" accept="image/*"/>
-                            <p className="text-xs text-slate-500 mt-2">Klik foto untuk ubah</p>
-                        </div>
-                        <div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700"/></div>
-                        <button className="w-full py-3 bg-yellow-500 text-black font-bold rounded">SIMPAN</button>
-                    </form>
-                </div>
-            )
-        }
-        function TopUpPage({onTopUp}) { return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Top Up</h2><div className="grid grid-cols-2 gap-4">{[10000,50000,100000,500000].map(x=><button key={x} onClick={()=>onTopUp(x)} className="p-4 bg-slate-800 rounded border border-slate-700 hover:border-yellow-500 text-xl font-bold">{x.toLocaleString()}</button>)}</div></div> }
-        function InfoPage() { return <div className="p-6 text-slate-300"><h2 className="text-2xl text-yellow-400 mb-4">Info</h2><p>Aplikasi Demo Casino React + Supabase.</p></div> }
-        function PatternPage() { return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Pola Gacor</h2><div className="bg-slate-800 p-4 rounded border border-green-500/30 text-green-400">Pola Pagi: Auto 20x - Winrate 80%</div></div> }
-        function FeedbackPage() { return <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Feedback</h2><textarea className="w-full bg-slate-800 p-4 rounded text-white mb-4" placeholder="Pesan..."></textarea><button onClick={()=>alert('Terkirim!')} className="px-6 py-2 bg-blue-600 rounded">Kirim</button></div> }
-
-        // --- APP ROOT ---
         function App() {
             const [session, setSession] = React.useState(null);
             const [loading, setLoading] = React.useState(true);
