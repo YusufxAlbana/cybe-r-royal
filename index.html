@@ -84,7 +84,7 @@
             Megaphone: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
         };
 
-        // --- IMAGE CROPPER ---
+        // --- IMAGE CROPPER (BRIGHTER VERSION) ---
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -92,32 +92,43 @@
             const [dragging, setDragging] = React.useState(false);
             const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
             const imgRef = React.useRef(null);
+            
             const CONTAINER_SIZE = 280; 
 
             React.useEffect(() => {
-                const img = new Image(); img.src = imageSrc;
+                const img = new Image();
+                img.src = imageSrc;
                 img.onload = () => {
-                    const wr = CONTAINER_SIZE / img.naturalWidth;
-                    const hr = CONTAINER_SIZE / img.naturalHeight;
-                    const fit = Math.max(wr, hr);
-                    setZoom(fit); setMinZoom(fit * 0.5); 
+                    const widthRatio = CONTAINER_SIZE / img.naturalWidth;
+                    const heightRatio = CONTAINER_SIZE / img.naturalHeight;
+                    const fitZoom = Math.max(widthRatio, heightRatio);
+                    setZoom(fitZoom);
+                    setMinZoom(fitZoom * 0.5); 
                 };
             }, [imageSrc]);
 
             const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseUp = () => setDragging(false);
+            
             const handleSave = () => {
-                const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300;
-                const ctx = canvas.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 300);
+                const canvas = document.createElement('canvas');
+                const size = 300; 
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+                
                 if(imgRef.current) {
-                    const sf = 300 / CONTAINER_SIZE;
-                    const iw = imgRef.current.naturalWidth * zoom * sf;
-                    const ih = imgRef.current.naturalHeight * zoom * sf;
-                    const dx = (300 - iw) / 2 + (position.x * sf);
-                    const dy = (300 - ih) / 2 + (position.y * sf);
-                    ctx.save(); ctx.beginPath(); ctx.arc(150, 150, 150, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(imgRef.current, dx, dy, iw, ih); ctx.restore();
+                    const scaleFactor = size / CONTAINER_SIZE;
+                    const imgWidth = imgRef.current.naturalWidth * zoom * scaleFactor;
+                    const imgHeight = imgRef.current.naturalHeight * zoom * scaleFactor;
+                    
+                    const drawX = (size - imgWidth) / 2 + (position.x * scaleFactor);
+                    const drawY = (size - imgHeight) / 2 + (position.y * scaleFactor);
+
+                    ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
                 }
                 onCrop(canvas.toDataURL('image/jpeg', 0.7));
             };
@@ -332,23 +343,23 @@
                                 <button 
                                     key={g.id} 
                                     onClick={() => setGame(g.id)} 
-                                    className={`min-w-[160px] w-1/3 md:w-1/4 h-48 rounded-2xl bg-gradient-to-br ${g.color} p-4 flex flex-col items-center justify-between hover:scale-95 transition-transform shadow-xl border border-white/10 group snap-start relative overflow-hidden`}
+                                    className={`min-w-[160px] w-[45%] md:w-[200px] aspect-[9/16] rounded-2xl bg-gradient-to-br ${g.color} p-4 flex flex-col items-center justify-between hover:scale-95 transition-transform shadow-xl border border-white/10 group snap-start relative overflow-hidden`}
                                 >
                                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition"></div>
-                                    <div className="p-3 bg-black/30 rounded-full text-white group-hover:bg-white group-hover:text-black transition-colors z-10 mt-4">
+                                    <div className="p-4 bg-black/30 rounded-full text-white group-hover:bg-white group-hover:text-black transition-colors z-10 mt-8">
                                         <g.icon />
                                     </div>
-                                    <div className="text-center z-10 mb-2">
-                                        <span className="font-bold font-cyber text-sm md:text-base block">{g.name}</span>
-                                        <span className="text-[10px] text-white/70 block mt-1">{g.desc}</span>
+                                    <div className="text-center z-10 mb-4 w-full">
+                                        <span className="font-bold font-cyber text-lg block truncate px-2">{g.name}</span>
+                                        <span className="text-xs text-white/70 block mt-1 px-2 truncate">{g.desc}</span>
                                     </div>
                                 </button>
                             ))}
                             
                             {/* Dummy Card */}
-                            <div className="min-w-[160px] w-1/3 md:w-1/4 h-48 rounded-2xl bg-slate-800 border-2 border-dashed border-slate-600 p-4 flex flex-col items-center justify-center opacity-50 snap-start">
-                                <span className="text-2xl mb-2 grayscale">🚧</span>
-                                <span className="text-xs text-center font-bold">Coming Soon</span>
+                            <div className="min-w-[160px] w-[45%] md:w-[200px] aspect-[9/16] rounded-2xl bg-slate-800 border-2 border-dashed border-slate-600 p-4 flex flex-col items-center justify-center opacity-50 snap-start">
+                                <span className="text-3xl mb-2 grayscale">🚧</span>
+                                <span className="text-sm text-center font-bold">Coming Soon</span>
                             </div>
                         </div>
                     </div>
