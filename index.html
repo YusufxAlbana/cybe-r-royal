@@ -164,7 +164,8 @@
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
+                // Ubah bg-black/90 menjadi bg-black/70 atau bg-slate-900/80 backdrop-blur-md agar lebih terang
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
                     <div className="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4 text-center">Sesuaikan Foto</h3>
                         <div className="flex justify-center mb-6 select-none">
@@ -358,6 +359,8 @@
             const [msg, setMsg] = React.useState('');
             const [isCropping, setIsCropping] = React.useState(false);
             const [tempImg, setTempImg] = React.useState(null);
+            // Tambahkan state untuk mengontrol visibilitas form ganti password
+            const [showPasswordUI, setShowPasswordUI] = React.useState(false);
             const fileRef = React.useRef(null);
 
             const handleImageChange = (e) => {
@@ -374,10 +377,20 @@
                 e.preventDefault();
                 setMsg('Menyimpan...');
                 const authUpdates = { email };
-                if(password) authUpdates.password = password;
+                // Hanya update password jika UI ganti password aktif dan password tidak kosong
+                if(showPasswordUI && password) authUpdates.password = password;
+
                 const { error: authError } = await supabase.auth.updateUser(authUpdates);
                 const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id);
-                if (authError || dbError) setMsg("Gagal simpan."); else { setMsg("Berhasil disimpan!"); refreshProfile(); }
+                
+                if (authError || dbError) {
+                    setMsg("Gagal simpan: " + (authError?.message || dbError?.message));
+                } else {
+                    setMsg("Berhasil disimpan!");
+                    setPassword(''); // Reset password field
+                    setShowPasswordUI(false); // Tutup UI password setelah berhasil
+                    refreshProfile();
+                }
             };
 
             return (
@@ -394,7 +407,29 @@
                         </div>
                         <div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
                         <div><label className="text-xs text-slate-400">Email</label><input value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
-                        <div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
+                        
+                        {/* Bagian Ganti Password yang bisa di-expand */}
+                        <div className="border-t border-white/10 pt-4">
+                            <button 
+                                type="button"
+                                onClick={() => setShowPasswordUI(!showPasswordUI)}
+                                className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"
+                            >
+                                <span className="text-sm font-bold">Ubah Password</span>
+                                <div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}>
+                                    <Icons.ArrowDown />
+                                </div>
+                            </button>
+                            
+                            {showPasswordUI && (
+                                <div className="mt-4 animate-fade-in">
+                                    <label className="text-xs text-slate-400">Password Baru</label>
+                                    <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/>
+                                    <p className="text-xs text-slate-500 mt-1">Kosongkan jika tidak ingin mengubah password.</p>
+                                </div>
+                            )}
+                        </div>
+
                         <button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>
                         {msg && <p className="text-center text-yellow-400 text-sm">{msg}</p>}
                     </form>
