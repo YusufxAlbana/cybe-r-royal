@@ -25,39 +25,16 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Cropper Styles - LEBIH TERANG */
-        .crop-wrapper {
-            position: relative;
-            width: 280px;
-            height: 280px;
-            margin: 0 auto;
-            background: transparent; 
-        }
-        .crop-overlay {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 4px solid #eab308;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); 
-            z-index: 20;
-            pointer-events: none;
-        }
-        .drag-area {
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-            overflow: hidden;
-            position: relative;
-        }
+        /* Hide Scrollbar for horizontal sliders */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Cropper Styles */
+        .crop-wrapper { position: relative; width: 280px; height: 280px; margin: 0 auto; background: transparent; }
+        .crop-overlay { position: absolute; inset: 0; border-radius: 50%; border: 4px solid #eab308; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); z-index: 20; pointer-events: none; }
+        .drag-area { width: 100%; height: 100%; cursor: grab; overflow: hidden; position: relative; }
         .drag-area:active { cursor: grabbing; }
-        
-        .slider-thumb::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px; height: 20px;
-            background: #eab308;
-            cursor: pointer;
-            border-radius: 50%;
-        }
+        .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #eab308; cursor: pointer; border-radius: 50%; }
         .wheel-container { transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99); }
     </style>
 </head>
@@ -103,10 +80,11 @@
             Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
             Disc: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>,
             TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-            ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20L4 10h16l-8 10z"/></svg>
+            ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20L4 10h16l-8 10z"/></svg>,
+            Megaphone: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
         };
 
-        // --- IMAGE CROPPER (BRIGHTER VERSION) ---
+        // --- IMAGE CROPPER ---
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -114,43 +92,32 @@
             const [dragging, setDragging] = React.useState(false);
             const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
             const imgRef = React.useRef(null);
-            
             const CONTAINER_SIZE = 280; 
 
             React.useEffect(() => {
-                const img = new Image();
-                img.src = imageSrc;
+                const img = new Image(); img.src = imageSrc;
                 img.onload = () => {
-                    const widthRatio = CONTAINER_SIZE / img.naturalWidth;
-                    const heightRatio = CONTAINER_SIZE / img.naturalHeight;
-                    const fitZoom = Math.max(widthRatio, heightRatio);
-                    setZoom(fitZoom);
-                    setMinZoom(fitZoom * 0.5); 
+                    const wr = CONTAINER_SIZE / img.naturalWidth;
+                    const hr = CONTAINER_SIZE / img.naturalHeight;
+                    const fit = Math.max(wr, hr);
+                    setZoom(fit); setMinZoom(fit * 0.5); 
                 };
             }, [imageSrc]);
 
             const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseUp = () => setDragging(false);
-            
             const handleSave = () => {
-                const canvas = document.createElement('canvas');
-                const size = 300; 
-                canvas.width = size; canvas.height = size;
-                const ctx = canvas.getContext('2d');
-
-                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
-                
+                const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300;
+                const ctx = canvas.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 300);
                 if(imgRef.current) {
-                    const scaleFactor = size / CONTAINER_SIZE;
-                    const imgWidth = imgRef.current.naturalWidth * zoom * scaleFactor;
-                    const imgHeight = imgRef.current.naturalHeight * zoom * scaleFactor;
-                    
-                    const drawX = (size - imgWidth) / 2 + (position.x * scaleFactor);
-                    const drawY = (size - imgHeight) / 2 + (position.y * scaleFactor);
-
-                    ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
+                    const sf = 300 / CONTAINER_SIZE;
+                    const iw = imgRef.current.naturalWidth * zoom * sf;
+                    const ih = imgRef.current.naturalHeight * zoom * sf;
+                    const dx = (300 - iw) / 2 + (position.x * sf);
+                    const dy = (300 - ih) / 2 + (position.y * sf);
+                    ctx.save(); ctx.beginPath(); ctx.arc(150, 150, 150, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(imgRef.current, dx, dy, iw, ih); ctx.restore();
                 }
                 onCrop(canvas.toDataURL('image/jpeg', 0.7));
             };
@@ -327,23 +294,71 @@
             );
         }
 
-        // --- LOBBY & DASHBOARD ---
+        // --- UPDATED LOBBY WITH BANNER & HORIZONTAL SCROLL ---
         function Lobby({ setGame }) {
-            const games = [{ id: 'slot', name: 'Cyber Slots', icon: Icons.Play, color: 'from-yellow-600 to-red-600' }, { id: 'wheel', name: 'Neon Wheel', icon: Icons.Disc, color: 'from-blue-600 to-purple-600' }, { id: 'highlow', name: 'Code Breaker', icon: Icons.TrendingUp, color: 'from-green-600 to-emerald-800' }];
+            const games = [
+                { id: 'slot', name: 'Cyber Slots', icon: Icons.Play, color: 'from-yellow-600 to-red-600', desc: 'Classic Slot Machine' },
+                { id: 'wheel', name: 'Neon Wheel', icon: Icons.Disc, color: 'from-blue-600 to-purple-600', desc: 'Spin & Win Big' },
+                { id: 'highlow', name: 'Code Breaker', icon: Icons.TrendingUp, color: 'from-green-600 to-emerald-800', desc: 'Guess High or Low' }
+            ];
+
+            const banners = [
+                { id: 1, title: "BONUS MEMBER BARU", desc: "Dapatkan 10.000 Chip Gratis!", color: "bg-gradient-to-r from-purple-600 to-blue-600" },
+                { id: 2, title: "EVENT JACKPOT", desc: "Win Rate Cyber Slots Naik 20%!", color: "bg-gradient-to-r from-red-600 to-orange-600" },
+                { id: 3, title: "TOP UP HEMAT", desc: "Diskon 50% Hari Ini Saja!", color: "bg-gradient-to-r from-green-600 to-teal-600" },
+            ];
+
             return (
-                <div className="p-6 grid gap-4 md:grid-cols-3">
-                    {games.map(g => (
-                        <button key={g.id} onClick={() => setGame(g.id)} className={`h-40 rounded-2xl bg-gradient-to-br ${g.color} p-6 flex flex-col items-center justify-center gap-3 hover:scale-105 transition-transform shadow-xl border border-white/10 group`}>
-                            <div className="p-3 bg-black/30 rounded-full text-white group-hover:bg-white group-hover:text-black transition-colors"><g.icon /></div>
-                            <span className="font-bold font-cyber text-lg">{g.name}</span>
-                        </button>
-                    ))}
+                <div className="space-y-8 animate-fade-in">
+                    {/* BANNER ADS SECTION */}
+                    <div className="w-full overflow-x-auto pb-4 snap-x flex gap-4 no-scrollbar">
+                        {banners.map(b => (
+                            <div key={b.id} className={`min-w-[85%] md:min-w-[60%] h-40 rounded-2xl ${b.color} p-6 flex flex-col justify-center shadow-lg snap-center relative overflow-hidden`}>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                                <h3 className="text-2xl font-black text-white font-cyber z-10">{b.title}</h3>
+                                <p className="text-white/90 z-10">{b.desc}</p>
+                                <div className="mt-3 flex items-center gap-2 text-xs font-bold bg-black/20 w-fit px-3 py-1 rounded-full"><Icons.Megaphone /> INFO PROMO</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* GAME LIST SECTION */}
+                    <div>
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 font-cyber text-yellow-500">
+                            <Icons.Play /> Game Pilihan
+                        </h2>
+                        <div className="flex gap-4 overflow-x-auto pb-6 no-scrollbar snap-x">
+                            {games.map(g => (
+                                <button 
+                                    key={g.id} 
+                                    onClick={() => setGame(g.id)} 
+                                    className={`min-w-[160px] w-1/3 md:w-1/4 h-48 rounded-2xl bg-gradient-to-br ${g.color} p-4 flex flex-col items-center justify-between hover:scale-95 transition-transform shadow-xl border border-white/10 group snap-start relative overflow-hidden`}
+                                >
+                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition"></div>
+                                    <div className="p-3 bg-black/30 rounded-full text-white group-hover:bg-white group-hover:text-black transition-colors z-10 mt-4">
+                                        <g.icon />
+                                    </div>
+                                    <div className="text-center z-10 mb-2">
+                                        <span className="font-bold font-cyber text-sm md:text-base block">{g.name}</span>
+                                        <span className="text-[10px] text-white/70 block mt-1">{g.desc}</span>
+                                    </div>
+                                </button>
+                            ))}
+                            
+                            {/* Dummy Card */}
+                            <div className="min-w-[160px] w-1/3 md:w-1/4 h-48 rounded-2xl bg-slate-800 border-2 border-dashed border-slate-600 p-4 flex flex-col items-center justify-center opacity-50 snap-start">
+                                <span className="text-2xl mb-2 grayscale">🚧</span>
+                                <span className="text-xs text-center font-bold">Coming Soon</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         }
 
         function ProfilePage({session,profileData,refreshProfile}){
             const [email, setEmail] = React.useState(session.user.email);
+            const [password, setPassword] = React.useState('');
             const [fullName, setFullName] = React.useState(profileData?.full_name || '');
             const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || '');
             const [msg, setMsg] = React.useState('');
@@ -371,39 +386,20 @@
                 e.preventDefault();
                 setMsg('Menyimpan...');
 
-                // 1. Update Data Diri
                 const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id);
                 if (dbError) { setMsg("Gagal update profil."); return; }
 
-                // 2. Update Password (Jika Diminta)
                 if (showPasswordUI) {
-                    if (!oldPassword || !newPassword || !confirmPassword) {
-                        setMsg("Isi semua kolom password."); return;
-                    }
-                    if (newPassword !== confirmPassword) {
-                        setMsg("Konfirmasi password tidak cocok."); return;
-                    }
-                    if (newPassword.length < 6) {
-                        setMsg("Password minimal 6 karakter."); return;
-                    }
+                    if (!oldPassword || !newPassword || !confirmPassword) { setMsg("Isi semua kolom password."); return; }
+                    if (newPassword !== confirmPassword) { setMsg("Konfirmasi password tidak cocok."); return; }
+                    if (newPassword.length < 6) { setMsg("Password minimal 6 karakter."); return; }
 
-                    // Verifikasi password lama dengan cara login ulang
-                    const { error: verifyError } = await supabase.auth.signInWithPassword({
-                        email: session.user.email,
-                        password: oldPassword
-                    });
+                    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: session.user.email, password: oldPassword });
+                    if (verifyError) { setMsg("Password lama salah!"); return; }
 
-                    if (verifyError) {
-                        setMsg("Password lama salah!"); return;
-                    }
-
-                    // Update Password
                     const { error: updatePassError } = await supabase.auth.updateUser({ password: newPassword });
-                    if (updatePassError) {
-                        setMsg("Gagal update password: " + updatePassError.message); return;
-                    }
+                    if (updatePassError) { setMsg("Gagal update password."); return; }
                     
-                    // Reset form password
                     setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setShowPasswordUI(false);
                 }
 
@@ -426,33 +422,17 @@
                         <div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
                         <div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div>
                         
-                        {/* CHANGE PASSWORD SECTION */}
                         <div className="border-t border-white/10 pt-4">
-                            <button 
-                                type="button"
-                                onClick={() => setShowPasswordUI(!showPasswordUI)}
-                                className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"
-                            >
+                            <button type="button" onClick={() => setShowPasswordUI(!showPasswordUI)} className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors">
                                 <span className="text-sm font-bold">Ubah Password</span>
-                                <div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}>
-                                    <Icons.ArrowDown />
-                                </div>
+                                <div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div>
                             </button>
                             
                             {showPasswordUI && (
                                 <div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5">
-                                    <div>
-                                        <label className="text-xs text-slate-400">Password Lama</label>
-                                        <input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400">Password Baru</label>
-                                        <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400">Konfirmasi Password Baru</label>
-                                        <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/>
-                                    </div>
+                                    <div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
+                                    <div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
+                                    <div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
                                 </div>
                             )}
                         </div>
@@ -468,7 +448,7 @@
             const [view, setView] = React.useState('lobby'); 
             const [activeGame, setActiveGame] = React.useState(null);
             const [balance, setBalance] = React.useState(0);
-            const [winMessage, setWinMessage] = React.useState('Pilih Game');
+            const [winMessage, setWinMessage] = React.useState('Selamat Datang');
             const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '' });
 
             const loadUserData = async () => {
