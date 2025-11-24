@@ -25,6 +25,7 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
+        /* Hide Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -37,49 +38,12 @@
         
         /* GAME STYLES */
         .wheel-container { transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        
-        /* Slot 5x3 Styles */
-        .slot-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 4px;
-            background: #1e293b;
-            padding: 10px;
-            border-radius: 10px;
-            border: 2px solid #fbbf24;
-            box-shadow: inset 0 0 20px #000;
-        }
-        .slot-reel {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            overflow: hidden;
-            height: 240px; /* 3 rows x 80px approx */
-            background: #0f172a;
-            border-radius: 4px;
-        }
-        .slot-cell {
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            background: linear-gradient(to bottom, #1e293b, #0f172a);
-            border: 1px solid #334155;
-            border-radius: 4px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-        
-        /* Animasi Big Win */
-        @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
-        @keyframes coin-fall { 0% { transform: translateY(-100vh) rotate(0deg); } 100% { transform: translateY(100vh) rotate(360deg); } }
+        .slot-reel-container { mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent); }
+        .slot-symbol { transition: transform 0.1s linear; }
+        .slot-spinning .slot-symbol { animation: slot-spin 0.1s infinite linear; }
+        @keyframes slot-spin { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
 
-        .big-win-overlay { animation: explode 0.5s ease-out forwards; }
-        .shake-screen { animation: shake 0.5s ease-in-out; }
-        .coin { position: absolute; width: 30px; height: 30px; background: gold; border-radius: 50%; border: 2px solid orange; animation: coin-fall 2s linear infinite; z-index: 100; }
-        
-        /* HighLow Card */
+        /* Card Flip */
         .highlow-card { perspective: 1000px; }
         .highlow-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
         .highlow-card.flipped .highlow-card-inner { transform: rotateY(180deg); }
@@ -88,6 +52,14 @@
         .highlow-card-back { background: linear-gradient(135deg, #eab308, #ca8a04); transform: rotateY(180deg); color: black; font-weight: bold; font-size: 3rem; border: 2px solid #fef08a; }
         .highlow-card-back.win { background: linear-gradient(135deg, #22c55e, #15803d); border-color: #86efac; color: white; }
         .highlow-card-back.lose { background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #fca5a5; color: white; }
+        
+        /* Big Win Animation */
+        @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
+        @keyframes coin-fall { 0% { transform: translateY(-100vh) rotate(0deg); } 100% { transform: translateY(100vh) rotate(360deg); } }
+        .big-win-overlay { animation: explode 0.5s ease-out forwards; }
+        .shake-screen { animation: shake 0.5s ease-in-out; }
+        .coin { position: absolute; width: 30px; height: 30px; background: gold; border-radius: 50%; border: 2px solid orange; animation: coin-fall 2s linear infinite; z-index: 100; }
     </style>
 </head>
 <body>
@@ -161,17 +133,25 @@
             const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); };
             const handleMouseUp = () => setDragging(false);
+            
             const handleSave = () => {
-                const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300;
-                const ctx = canvas.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 300);
+                const canvas = document.createElement('canvas');
+                const size = 300; 
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+                
                 if(imgRef.current) {
-                    const sf = 300 / CONTAINER_SIZE;
-                    const iw = imgRef.current.naturalWidth * zoom * sf;
-                    const ih = imgRef.current.naturalHeight * zoom * sf;
-                    const dx = (300 - iw) / 2 + (position.x * sf);
-                    const dy = (300 - ih) / 2 + (position.y * sf);
-                    ctx.save(); ctx.beginPath(); ctx.arc(150, 150, 150, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(imgRef.current, dx, dy, iw, ih); ctx.restore();
+                    const scaleFactor = size / CONTAINER_SIZE;
+                    const imgWidth = imgRef.current.naturalWidth * zoom * scaleFactor;
+                    const imgHeight = imgRef.current.naturalHeight * zoom * scaleFactor;
+                    
+                    const drawX = (size - imgWidth) / 2 + (position.x * scaleFactor);
+                    const drawY = (size - imgHeight) / 2 + (position.y * scaleFactor);
+
+                    ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
                 }
                 onCrop(canvas.toDataURL('image/jpeg', 0.7));
             };
@@ -206,7 +186,8 @@
             const [successMsg, setSuccessMsg] = React.useState('');
 
             const handleAuth = async (e) => {
-                e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                e.preventDefault();
+                setLoading(true); setErrorMsg(''); setSuccessMsg('');
                 const cleanEmail = email.trim();
                 try {
                     if (isRegister) {
@@ -231,7 +212,10 @@
                     <div className="absolute inset-0 pointer-events-none"><div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 to-blue-900/20"></div></div>
                     <div className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10">
                         <div className="text-center mb-6"><h1 className="text-3xl font-bold text-yellow-500 font-cyber tracking-widest">ROYAL CYBER</h1></div>
-                        <div className="flex border-b border-white/10 mb-6"><button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button><button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button></div>
+                        <div className="flex border-b border-white/10 mb-6">
+                            <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button>
+                            <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button>
+                        </div>
                         <form onSubmit={handleAuth} className="space-y-4">
                             {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm">{errorMsg}</div>}
                             {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm">{successMsg}</div>}
@@ -262,126 +246,51 @@
             );
         }
 
-        // --- GAME 1: CYBER SLOTS (5x3 + Big Win) ---
+        // --- GAMES ---
         function GameSlots({ balance, updateBalance, setWinMessage }) {
-            // Symbols 
-            const SYMBOLS = [
-                {id:'Z', icon:'⚡', val:100, color:'text-yellow-400'}, // Zeus
-                {id:'7', icon:'7️⃣', val:50, color:'text-red-500'},
-                {id:'D', icon:'💎', val:20, color:'text-cyan-400'},
-                {id:'K', icon:'👑', val:10, color:'text-purple-400'},
-                {id:'C', icon:'🍒', val:5, color:'text-pink-500'}
-            ];
-            
-            // State untuk 5 kolom, masing-masing 3 baris
-            // Kita simpan sebagai array of arrays: [[s1,s2,s3], [s1,s2,s3], ...]
+            const SYMBOLS = [{id:'Z', icon:'⚡', val:100, color:'text-yellow-400'}, {id:'7', icon:'7️⃣', val:50, color:'text-red-500'}, {id:'D', icon:'💎', val:20, color:'text-cyan-400'}, {id:'K', icon:'👑', val:10, color:'text-purple-400'}, {id:'C', icon:'🍒', val:5, color:'text-pink-500'}];
             const [grid, setGrid] = React.useState(Array(5).fill([SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]));
             const [isSpinning, setIsSpinning] = React.useState(false);
             const [winAmount, setWinAmount] = React.useState(0);
             const [isAuto, setIsAuto] = React.useState(false);
             const [showBigWin, setShowBigWin] = React.useState(false);
             const autoRef = React.useRef(isAuto);
-            
             React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]);
-
-            // Helper: Get random symbol
             const getRandomSymbol = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-            
-            // Helper: Generate random reel (3 symbols)
             const getRandomReel = () => [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
-
             const spin = async () => {
                 if (balance < 200) { setIsAuto(false); return setWinMessage("Saldo Habis! (Min 200)"); }
-                setShowBigWin(false);
-                updateBalance(balance - 200);
-                setIsSpinning(true); setWinAmount(0); setWinMessage("Spinning...");
-                
-                // Animasi spin
-                const interval = setInterval(() => {
-                    setGrid(Array(5).fill(0).map(() => getRandomReel()));
-                }, 100);
-
-                await new Promise(r => setTimeout(r, 2000));
-                clearInterval(interval);
-                
-                // Hasil Akhir (5 cols x 3 rows)
-                const finalGrid = Array(5).fill(0).map(() => getRandomReel());
-                setGrid(finalGrid);
-                
-                // Cek Kemenangan (Sederhana: Cek baris tengah 3-5 simbol sama)
-                // Baris tengah adalah index 1 di setiap kolom
+                setShowBigWin(false); updateBalance(balance - 200); setIsSpinning(true); setWinAmount(0); setWinMessage("Spinning...");
+                const interval = setInterval(() => { setGrid(Array(5).fill(0).map(() => getRandomReel())); }, 100);
+                await new Promise(r => setTimeout(r, 2000)); clearInterval(interval);
+                const finalGrid = Array(5).fill(0).map(() => getRandomReel()); setGrid(finalGrid);
                 const midRow = finalGrid.map(col => col[1]);
                 let win = 0;
-                
-                // Cek 5 sama
                 if (midRow.every(s => s.id === midRow[0].id)) win = midRow[0].val * 100;
-                // Cek 4 sama (dari kiri)
                 else if (midRow.slice(0,4).every(s => s.id === midRow[0].id)) win = midRow[0].val * 20;
-                // Cek 3 sama (dari kiri)
                 else if (midRow.slice(0,3).every(s => s.id === midRow[0].id)) win = midRow[0].val * 5;
-
-                // Cek Big Win (> 5000 chip)
-                if (win >= 5000) {
-                    setShowBigWin(true);
-                    setWinMessage("SENSATIONAL!!!");
-                    // Efek getar layar
-                    if(navigator.vibrate) navigator.vibrate(500);
-                } else if (win > 0) {
-                    setWinMessage(`Win +${win}`);
-                } else {
-                    setWinMessage("Zonk. Coba Lagi.");
-                }
-
+                if (win >= 5000) { setShowBigWin(true); setWinMessage("SENSATIONAL!!!"); if(navigator.vibrate) navigator.vibrate(500); } 
+                else if (win > 0) { setWinMessage(`Win +${win}`); } else { setWinMessage("Zonk. Coba Lagi."); }
                 if (win > 0) updateBalance(balance - 200 + win);
-                setWinAmount(win);
-                
-                setIsSpinning(false);
+                setWinAmount(win); setIsSpinning(false);
                 if (autoRef.current) setTimeout(spin, 1000);
             };
-
             React.useEffect(() => { if(isAuto && !isSpinning) spin(); }, [isAuto]);
 
             return (
                 <div className={`relative w-full max-w-2xl mx-auto ${showBigWin ? 'shake-screen' : ''}`}>
-                    {/* BIG WIN OVERLAY */}
-                    {showBigWin && (
-                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 rounded-3xl big-win-overlay pointer-events-none">
-                            <h1 className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,1)] font-cyber mb-2">BIG WIN</h1>
-                            <div className="text-4xl font-bold text-white animate-bounce">+{winAmount.toLocaleString()}</div>
-                            {/* Koin Jatuh (Simulasi CSS) */}
-                            <div className="absolute top-0 left-10 coin" style={{animationDelay:'0s'}}></div>
-                            <div className="absolute top-0 right-20 coin" style={{animationDelay:'0.5s'}}></div>
-                            <div className="absolute top-0 left-1/2 coin" style={{animationDelay:'1s'}}></div>
-                        </div>
-                    )}
-
+                    {showBigWin && (<div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 rounded-3xl big-win-overlay pointer-events-none"><h1 className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,1)] font-cyber mb-2">BIG WIN</h1><div className="text-4xl font-bold text-white animate-bounce">+{winAmount.toLocaleString()}</div><div className="absolute top-0 left-10 coin" style={{animationDelay:'0s'}}></div><div className="absolute top-0 right-20 coin" style={{animationDelay:'0.5s'}}></div><div className="absolute top-0 left-1/2 coin" style={{animationDelay:'1s'}}></div></div>)}
                     <div className="bg-gradient-to-b from-yellow-600 via-purple-900 to-black p-1.5 rounded-3xl shadow-[0_0_50px_rgba(234,179,8,0.4)]">
                         <div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden">
-                            
-                            {/* SLOT GRID 5x3 */}
                             <div className="slot-grid mb-6">
-                                {grid.map((reel, i) => (
-                                    <div key={i} className="slot-reel">
-                                        {reel.map((s, j) => (
-                                            <div key={j} className={`slot-cell ${isSpinning ? 'blur-[2px]' : ''}`}>
-                                                <span className={`filter drop-shadow-md ${s.color}`}>{s.icon}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                                {/* Payline Indicator (Tengah) */}
+                                {grid.map((reel, i) => (<div key={i} className="slot-reel">{reel.map((s, j) => (<div key={j} className={`slot-cell ${isSpinning ? 'blur-[2px]' : ''}`}><span className={`filter drop-shadow-md ${s.color}`}>{s.icon}</span></div>))}</div>))}
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500/50 z-10 pointer-events-none"></div>
                             </div>
-
                             <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/10 mb-4">
                                 <div className="text-xs text-slate-400">Win: <span className="text-yellow-400 text-lg font-bold block">{winAmount}</span></div>
                                 <div className="text-xs text-slate-400 text-right">Bet: <span className="text-white text-lg font-bold block">200</span></div>
                             </div>
-
-                            <div className="flex gap-3">
-                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto?'STOP':'AUTO'}</button>
-                                <button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-yellow-500 to-orange-600 text-black shadow-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-xl tracking-widest">SPIN</button>
-                            </div>
+                            <div className="flex gap-3"><button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto?'STOP':'AUTO'}</button><button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-yellow-500 to-orange-600 text-black shadow-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-xl tracking-widest">SPIN</button></div>
                         </div>
                     </div>
                 </div>
@@ -406,17 +315,13 @@
                 if (balance < 500) return setWinMessage("Butuh 500 Chip!");
                 updateBalance(balance - 500);
                 setIsSpinning(true); setWinMessage("Putar...");
-
                 const spins = 5; 
                 const randomIndex = Math.floor(Math.random() * segments.length);
                 const segmentAngle = 360 / segments.length;
-                
                 const targetRotation = (spins * 360) + (360 - (randomIndex * segmentAngle));
                 const randomOffset = (Math.random() - 0.5) * 30; 
-                
                 const finalRot = rotation + targetRotation + randomOffset;
                 setRotation(finalRot);
-
                 setTimeout(() => {
                     const winSeg = segments[randomIndex];
                     const win = 500 * winSeg.val;
@@ -429,18 +334,10 @@
             return (
                 <div className="flex flex-col items-center">
                     <div className="relative w-72 h-72 mb-8">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30 text-yellow-400 filter drop-shadow-lg">
-                            <Icons.MapPin className="w-12 h-12 transform rotate-180 fill-current" />
-                        </div>
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30 text-yellow-400 filter drop-shadow-lg"><Icons.MapPin className="w-12 h-12 transform rotate-180 fill-current" /></div>
                         <div className="w-full h-full rounded-full border-8 border-slate-800 relative overflow-hidden wheel-container shadow-[0_0_30px_rgba(0,0,0,0.5)]" style={{ transform: `rotate(${rotation}deg)`, background: `conic-gradient(#ef4444 0% 12.5%, #3b82f6 12.5% 25%, #ef4444 25% 37.5%, #22c55e 37.5% 50%, #ef4444 50% 62.5%, #eab308 62.5% 75%, #ef4444 75% 87.5%, #a855f7 87.5% 100%)` }}>
-                            {segments.map((seg, i) => (
-                                <div key={i} className="absolute w-full h-full top-0 left-0" style={{ transform: `rotate(${i * 45 + 22.5}deg)` }}> 
-                                    <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center font-bold font-cyber text-white drop-shadow-md text-sm">{seg.label}</div>
-                                </div>
-                            ))}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 rounded-full border-4 border-yellow-500 shadow-lg flex items-center justify-center z-20">
-                                <span className="font-cyber text-yellow-500 font-bold">SPIN</span>
-                            </div>
+                            {segments.map((seg, i) => (<div key={i} className="absolute w-full h-full top-0 left-0" style={{ transform: `rotate(${i * 45 + 22.5}deg)` }}> <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center font-bold font-cyber text-white drop-shadow-md text-sm">{seg.label}</div></div>))}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 rounded-full border-4 border-yellow-500 shadow-lg flex items-center justify-center z-20"><span className="font-cyber text-yellow-500 font-bold">SPIN</span></div>
                         </div>
                     </div>
                     <button onClick={spin} disabled={isSpinning} className="px-12 py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl font-black font-cyber text-white shadow-lg hover:scale-105 transition disabled:opacity-50 disabled:hover:scale-100">PUTAR (500)</button>
@@ -606,11 +503,33 @@
                                 </div>
                             )}
                         </div>
+
                         <button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>
                         {msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}
                     </form>
                 </div>
             )
+        }
+
+        function TopUpPage() {
+            return (
+                <div className="p-6 text-center">
+                    <h2 className="text-2xl text-yellow-400 mb-4 font-cyber">Top Up Saldo</h2>
+                    <div className="p-8 bg-slate-900/50 border border-white/10 rounded-xl">
+                        <div className="text-4xl mb-4">🚧</div>
+                        <h3 className="text-xl font-bold text-white mb-2">Sedang Maintenance</h3>
+                        <p className="text-slate-400">Fitur Top Up sedang dalam perbaikan sistem. Mohon kembali lagi nanti.</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8 opacity-50 pointer-events-none grayscale">
+                            {[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (
+                                <div key={amt} className="p-4 bg-slate-800 border border-slate-700 rounded-xl">
+                                    <div className="text-slate-400 text-xs mb-1">Chip</div>
+                                    <div className="text-xl font-bold text-white">{amt.toLocaleString()}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
         function Dashboard({ session, onLogout }) {
@@ -639,7 +558,7 @@
             const renderContent = () => {
                 let content = null;
                 if (view === 'profile') content = <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />;
-                else if (view === 'topup') content = <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Top Up</h2><div className="grid grid-cols-2 gap-4">{[10000,50000,100000,500000].map(x=><button key={x} onClick={()=>handleTopUp(x)} className="p-4 bg-slate-800 rounded border border-slate-700 hover:border-yellow-500 text-xl font-bold">{x.toLocaleString()}</button>)}</div></div>;
+                else if (view === 'topup') content = <TopUpPage />; // Maintenance Mode
                 else if (view === 'info') content = <div className="p-6 text-slate-300"><h2 className="text-2xl text-yellow-400 mb-4">Info</h2><p>Aplikasi Demo Casino React + Supabase.</p></div>;
                 else if (view === 'pola') content = <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Pola Gacor</h2><div className="bg-slate-800 p-4 rounded border border-green-500/30 text-green-400">Pola Pagi: Auto 20x - Winrate 80%</div></div>;
                 else if (view === 'feedback') content = <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Feedback</h2><textarea className="w-full bg-slate-800 p-4 rounded text-white mb-4" placeholder="Pesan..."></textarea><button onClick={()=>alert('Terkirim!')} className="px-6 py-2 bg-blue-600 rounded">Kirim</button></div>;
