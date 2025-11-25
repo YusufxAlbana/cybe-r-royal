@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Royal Cyber Casino - Admin & Member Access</title>
+    <title>Royal Cyber Casino - Level Up Update</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -18,13 +18,11 @@
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-        .glow-btn:hover { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -35,12 +33,12 @@
         .drag-area:active { cursor: grabbing; }
         .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #eab308; cursor: pointer; border-radius: 50%; }
         
-        /* ANIMATIONS */
+        /* GAME STYLES */
         .wheel-container { transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .slot-reel-container { mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent); }
         .slot-spinning .slot-symbol { animation: slot-spin 0.1s infinite linear; }
         @keyframes slot-spin { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
-
+        
         /* Big Win Effects */
         @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
@@ -130,19 +128,17 @@
             Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         };
 
-        // --- COMPONENTS ---
+        // --- COMPONENTS DEFINED BEFORE USE ---
 
         function BetControl({ bet, setBet, balance }) {
             const minBet = 100;
             const maxBet = Math.min(5000, balance > 0 ? balance : 5000); 
-
             const adjustBet = (amount) => {
                 let newBet = bet + amount;
                 if (newBet < minBet) newBet = minBet;
                 if (newBet > maxBet && maxBet >= minBet) newBet = maxBet;
                 setBet(newBet);
             };
-
             return (
                 <div className="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-white/10 w-full mb-4">
                     <button onClick={() => adjustBet(-100)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-red-400"><Icons.Minus /></button>
@@ -382,7 +378,7 @@
                     setWinMessage("Zonk. Coba Lagi.");
                 }
 
-                if (winTotal > 0) updateBalance(currentBalance + winTotal);
+                if (winTotal > 0) updateBalance(currentBalance + winTotal, true);
                 setWinAmount(winTotal);
                 
                 setIsSpinning(false);
@@ -412,7 +408,10 @@
                     <div className="bg-gradient-to-b from-yellow-600 via-purple-900 to-black p-1.5 rounded-3xl shadow-[0_0_50px_rgba(234,179,8,0.4)]">
                         <div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden">
                             
-                            <div className="grid grid-cols-5 gap-1 mb-4 bg-slate-800 p-2 rounded border border-slate-700 relative">
+                            <div 
+                                className="grid grid-cols-5 gap-2 mb-6 bg-slate-800 p-2 rounded border border-slate-700 relative"
+                                style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}
+                            >
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-600 z-10 shadow-[0_0_5px_rgba(239,68,68,0.8)] pointer-events-none"></div>
                                 {grid.map((reel, i) => (
                                     <div key={i} className="flex flex-col gap-1 overflow-hidden h-[240px] bg-slate-900 rounded border border-slate-700">
@@ -471,7 +470,7 @@
                 setTimeout(() => {
                     const winSeg = segments[randomIndex];
                     const win = bet * winSeg.val;
-                    updateBalance(balance - bet + win);
+                    updateBalance(balance - bet + win, true);
                     if(win > 0) setWinMessage(`Dapat ${winSeg.label} (+${win.toLocaleString()})`); else setWinMessage("Zonk! Coba lagi.");
                     setIsSpinning(false);
                 }, 5000);
@@ -532,7 +531,7 @@
 
                         if (win) { 
                             const winAmount = bet * 2; 
-                            updateBalance(balance - bet + winAmount); 
+                            updateBalance(balance - bet + winAmount, true); 
                             setStatus('BENAR!'); 
                             setWinMessage(`Win +${winAmount.toLocaleString()}`);
                             setResultClass('win'); 
@@ -632,7 +631,6 @@
                                 </button>
                             ))}
                             
-                            {/* Dummy Card */}
                             <div className="min-w-[160px] w-[45%] md:w-[200px] aspect-[9/16] rounded-2xl bg-slate-800 border-2 border-dashed border-slate-600 p-4 flex flex-col items-center justify-center opacity-50 snap-start">
                                 <span className="text-3xl mb-2 grayscale">🚧</span>
                                 <span className="text-sm text-center font-bold">Coming Soon</span>
@@ -696,6 +694,21 @@
                 <div className="max-w-xl mx-auto p-6 relative">
                     {isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}
                     <h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2>
+                    
+                    {/* LEVEL INFO CARD */}
+                    <div className="mb-6 p-4 bg-slate-800 rounded-lg flex items-center justify-between border border-yellow-500/20">
+                        <div>
+                            <span className="text-slate-400 text-xs block mb-1">Current Rank</span>
+                            <div className="text-xl font-bold text-white flex items-center gap-2">
+                                <Icons.Crown className="text-yellow-500 w-5 h-5"/> {profileData.title}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-slate-400 text-xs block mb-1">Total Spins</span>
+                            <div className="text-xl font-bold text-yellow-400">{profileData.total_spins || 0}</div>
+                        </div>
+                    </div>
+
                     <form onSubmit={handleUpdate} className="space-y-6">
                         <div className="flex flex-col items-center gap-4">
                             <div onClick={()=>fileRef.current.click()} className="w-32 h-32 rounded-full bg-slate-800 border-4 border-yellow-500 overflow-hidden cursor-pointer hover:opacity-80 relative group">
@@ -1143,7 +1156,7 @@
             const [activeGame, setActiveGame] = React.useState(null);
             const [balance, setBalance] = React.useState(0);
             const [winMessage, setWinMessage] = React.useState('Selamat Datang');
-            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user' });
+            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0 });
 
             const loadUserData = async () => {
                 try {
@@ -1153,11 +1166,21 @@
                         setProfileData({ 
                             full_name: data.full_name || 'Member', 
                             avatar_url: data.avatar_url, 
-                            role: data.role || 'user' 
+                            role: data.role || 'user',
+                            title: data.title || 'Newbie',
+                            total_spins: data.total_spins || 0
                         }); 
                     }
                     else if (error && error.code === 'PGRST116') {
-                        const initData = { id: session.user.id, balance: 10000, full_name: session.user.user_metadata?.full_name||'Member', avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}`, role: 'user' };
+                        const initData = { 
+                            id: session.user.id, 
+                            balance: 10000, 
+                            full_name: session.user.user_metadata?.full_name || 'Member', 
+                            avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}`, 
+                            role: 'user',
+                            title: 'Newbie',
+                            total_spins: 0
+                        };
                         await supabase.from('players').insert([initData]);
                         setBalance(10000); setProfileData(initData);
                     }
@@ -1165,9 +1188,33 @@
             };
             React.useEffect(() => { loadUserData(); }, [session]);
 
-            const updateBalance = async (newBal) => { setBalance(newBal); await supabase.from('players').update({ balance: newBal }).eq('id', session.user.id); };
-            const handleTopUp = (amount) => { updateBalance(balance + amount); setWinMessage(`TopUp +${amount}`); setView('lobby'); };
+            // NEW: Handle Game Result & Update Level Logic
+            const checkLevelUp = (spins) => {
+                if (spins >= 1000) return 'Casino King';
+                if (spins >= 500) return 'High Roller';
+                if (spins >= 50) return 'Rookie'; // Adjusted for quicker testing
+                return 'Newbie';
+            };
 
+            const updateBalance = async (newBal, isSpin = false) => { 
+                setBalance(newBal);
+                
+                const updates = { balance: newBal };
+                
+                if (isSpin) {
+                    const newSpins = (profileData.total_spins || 0) + 1;
+                    const newTitle = checkLevelUp(newSpins);
+                    
+                    updates.total_spins = newSpins;
+                    updates.title = newTitle;
+
+                    // Update local state immediately for UI responsiveness
+                    setProfileData(prev => ({ ...prev, total_spins: newSpins, title: newTitle }));
+                }
+
+                await supabase.from('players').update(updates).eq('id', session.user.id); 
+            };
+            
             const renderContent = () => {
                 let content = null;
                 if (view === 'profile') content = <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />;
@@ -1198,14 +1245,26 @@
                 <div className="min-h-screen flex bg-[#020617]">
                     <aside className="w-64 bg-slate-900 border-r border-white/5 hidden md:flex flex-col">
                         <div className="p-6 border-b border-white/5 flex items-center gap-2 text-yellow-500"><Icons.Crown /> <span className="font-cyber font-bold text-xl">ROYAL</span></div>
-                        <div className="p-4 border-b border-white/5 flex gap-3 items-center">
-                            <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden border border-yellow-500"><img src={profileData.avatar_url} className="w-full h-full object-cover"/></div>
-                            <div className="truncate"><div className="text-sm font-bold">{profileData.full_name}</div><div className="text-[10px] text-slate-500">ID: {session.user.email.split('@')[0]}</div></div>
+                        
+                        {/* PROFILE SECTION CLICKABLE */}
+                        <div 
+                            onClick={() => setView('profile')}
+                            className="p-4 border-b border-white/5 flex gap-3 items-center cursor-pointer hover:bg-white/5 transition-colors group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-slate-800 overflow-hidden border-2 border-yellow-500 relative">
+                                <img src={profileData.avatar_url} className="w-full h-full object-cover"/>
+                            </div>
+                            <div className="truncate flex-1">
+                                <div className="text-sm font-bold group-hover:text-yellow-400 transition-colors truncate">{profileData.full_name}</div>
+                                <div className="flex items-center gap-1 mt-1">
+                                    <span className="text-[10px] bg-yellow-600 text-black px-1.5 rounded font-bold uppercase">{profileData.title}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">Lvl: {Math.floor((profileData.total_spins || 0) / 10)}</div>
+                            </div>
                         </div>
+
                         <nav className="flex-1 p-4 space-y-1">
                             {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
-                            
-                            {/* ADMIN MENUS */}
                             {profileData.role === 'admin' && (
                                 <>
                                     <div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div>
@@ -1215,7 +1274,6 @@
                                     <button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button>
                                 </>
                             )}
-
                             <div className="my-4 border-t border-white/5"></div>
                             <button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button>
                         </nav>
@@ -1224,14 +1282,15 @@
                     <main className="flex-1 h-screen overflow-y-auto flex flex-col">
                         <header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10">
                             <div className="md:hidden font-cyber text-yellow-500">ROYAL</div>
-                            <div className="text-slate-400 text-sm hidden md:block">{winMessage}</div>
+                            
+                            {/* HEADER - Removed duplicate profile, kept balance only */}
+                            <div className="flex-1"></div>
                             <div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div>
                         </header>
                         <div className="p-4 md:p-8 flex-1">{renderContent()}</div>
                         <div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3">
                             <button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button>
                             <button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button>
-                            {/* Mobile Admin Menu Icon (Simple) */}
                             {profileData.role === 'admin' && <button onClick={()=>setView('requests')} className="text-green-500"><Icons.FileText/></button>}
                             <button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button>
                         </div>
