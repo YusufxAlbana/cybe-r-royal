@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Royal Cyber Casino - Level Up Update</title>
+    <title>Royal Cyber Casino - Member Access</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -18,11 +18,13 @@
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .glow-btn:hover { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -33,12 +35,12 @@
         .drag-area:active { cursor: grabbing; }
         .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #eab308; cursor: pointer; border-radius: 50%; }
         
-        /* GAME STYLES */
+        /* ANIMATIONS */
         .wheel-container { transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .slot-reel-container { mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent); }
+        
         .slot-spinning .slot-symbol { animation: slot-spin 0.1s infinite linear; }
         @keyframes slot-spin { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
-        
+
         /* Big Win Effects */
         @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
@@ -60,6 +62,13 @@
         /* Chat Animation */
         @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .chat-bubble { animation: slide-up 0.3s ease-out; }
+        
+        /* SHOP BORDERS */
+        .border-default { border: 2px solid #eab308; }
+        .border-neon-blue { border: 3px solid #3b82f6; box-shadow: 0 0 10px #3b82f6, inset 0 0 5px #3b82f6; }
+        .border-neon-pink { border: 3px solid #ec4899; box-shadow: 0 0 10px #ec4899, inset 0 0 5px #ec4899; }
+        .border-gold-king { border: 4px solid #fbbf24; box-shadow: 0 0 15px #fbbf24; background: linear-gradient(45deg, #92400e, #fbbf24, #92400e); }
+        .border-rainbow { border: 3px solid transparent; background: linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) border-box; }
     </style>
 </head>
 <body>
@@ -77,18 +86,7 @@
         class MockSupabaseClient {
             constructor() { console.warn("Mode Offline Aktif"); }
             get auth() { return { signUp: async ({ email, options }) => ({ data: { user: { id: 'local_'+email, email, user_metadata: options?.data } }, error: null }), signInWithPassword: async ({ email }) => ({ data: { user: { id: 'local_'+email, email } }, error: null }), signOut: async () => ({ error: null }), getSession: async () => ({ data: { session: null } }), onAuthStateChange: (cb) => ({ data: { subscription: { unsubscribe: () => {} } } }), updateUser: async (data) => ({ data: { user: { ...data } }, error: null }) }; }
-            from(table) { 
-                return { 
-                    select: () => ({ 
-                        eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }),
-                        order: () => ({ data: [], error: null }),
-                        limit: () => ({ data: [], error: null })
-                    }), 
-                    insert: async () => ({ error: null }), 
-                    update: async () => ({ error: 'Offline', eq: () => ({}) }), 
-                    delete: async () => ({ error: null, eq: () => ({}), neq: () => ({}) }) 
-                }; 
-            }
+            from(table) { return { select: () => ({ eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }), order: () => ({ data: [], error: null }), limit: () => ({ data: [], error: null }) }), insert: async () => ({ error: null }), update: async () => ({ error: 'Offline', eq: () => ({}) }), delete: async () => ({ error: null, eq: () => ({}), neq: () => ({}) }) }; }
             channel() { return { on: () => ({ subscribe: () => {} }), unsubscribe: () => {} }; }
         }
 
@@ -125,7 +123,8 @@
             Send: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>,
             Chat: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
             Minimize: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>,
-            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            ShoppingBag: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         };
 
         // --- COMPONENTS DEFINED BEFORE USE ---
@@ -164,9 +163,7 @@
                 const img = new Image();
                 img.src = imageSrc;
                 img.onload = () => {
-                    const widthRatio = CONTAINER_SIZE / img.naturalWidth;
-                    const heightRatio = CONTAINER_SIZE / img.naturalHeight;
-                    const fitZoom = Math.max(widthRatio, heightRatio);
+                    const fitZoom = Math.max(CONTAINER_SIZE / img.naturalWidth, CONTAINER_SIZE / img.naturalHeight);
                     setZoom(fitZoom);
                     setMinZoom(fitZoom * 0.5); 
                 };
@@ -409,7 +406,7 @@
                         <div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden">
                             
                             <div 
-                                className="grid grid-cols-5 gap-2 mb-6 bg-slate-800 p-2 rounded border border-slate-700 relative"
+                                className="grid gap-2 mb-6 bg-slate-800 p-2 rounded border border-slate-700 relative"
                                 style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}
                             >
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-600 z-10 shadow-[0_0_5px_rgba(239,68,68,0.8)] pointer-events-none"></div>
@@ -640,515 +637,208 @@
                 </div>
             );
         }
-
-        function ProfilePage({session,profileData,refreshProfile}){
-            const [email, setEmail] = React.useState(session.user.email);
-            const [password, setPassword] = React.useState('');
-            const [fullName, setFullName] = React.useState(profileData?.full_name || '');
-            const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || '');
-            const [msg, setMsg] = React.useState('');
-            const [isCropping, setIsCropping] = React.useState(false);
-            const [tempImg, setTempImg] = React.useState(null);
-            const [showPasswordUI, setShowPasswordUI] = React.useState(false);
-            const [oldPassword, setOldPassword] = React.useState('');
-            const [newPassword, setNewPassword] = React.useState('');
-            const [confirmPassword, setConfirmPassword] = React.useState('');
-            const fileRef = React.useRef(null);
-
-            const handleImageChange = (e) => {
-                if(e.target.files[0]){
-                    if (e.target.files[0].size > 5 * 1024 * 1024) return alert("Maks 5MB");
-                    const r = new FileReader();
-                    r.onload = () => { setTempImg(r.result); setIsCropping(true); };
-                    r.readAsDataURL(e.target.files[0]);
-                }
-                e.target.value = null;
-            };
-            
-            const handleUpdate = async (e) => {
-                e.preventDefault();
-                setMsg('Menyimpan...');
-
-                const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id);
-                if (dbError) { setMsg("Gagal update profil."); return; }
-
-                if (showPasswordUI) {
-                    if (!oldPassword || !newPassword || !confirmPassword) { setMsg("Isi semua kolom password."); return; }
-                    if (newPassword !== confirmPassword) { setMsg("Konfirmasi password tidak cocok."); return; }
-                    if (newPassword.length < 6) { setMsg("Password minimal 6 karakter."); return; }
-
-                    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: session.user.email, password: oldPassword });
-                    if (verifyError) { setMsg("Password lama salah!"); return; }
-
-                    const { error: updatePassError } = await supabase.auth.updateUser({ password: newPassword });
-                    if (updatePassError) { setMsg("Gagal update password."); return; }
-                    
-                    setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setShowPasswordUI(false);
-                }
-
-                setMsg("Berhasil disimpan!");
-                refreshProfile();
-            };
-
+        
+        function InfoPage() {
             return (
-                <div className="max-w-xl mx-auto p-6 relative">
-                    {isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2>
-                    
-                    {/* LEVEL INFO CARD */}
-                    <div className="mb-6 p-4 bg-slate-800 rounded-lg flex items-center justify-between border border-yellow-500/20">
-                        <div>
-                            <span className="text-slate-400 text-xs block mb-1">Current Rank</span>
-                            <div className="text-xl font-bold text-white flex items-center gap-2">
-                                <Icons.Crown className="text-yellow-500 w-5 h-5"/> {profileData.title}
-                            </div>
+                <div className="max-w-3xl mx-auto p-6 space-y-8 animate-fade-in">
+                    <div className="text-center space-y-2">
+                        <h2 className="text-3xl font-cyber text-yellow-400 tracking-widest">ROYAL CYBER CASINO</h2>
+                        <p className="text-slate-400 text-sm">The Future of Digital Entertainment</p>
+                    </div>
+
+                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10 space-y-4">
+                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">Tentang Kami</h3>
+                        <p className="text-slate-300 text-sm leading-relaxed">
+                            Royal Cyber Casino adalah platform simulasi kasino terdepan yang menggabungkan estetika Cyberpunk dengan sensasi permainan klasik. Kami menghadirkan pengalaman bermain yang adil, transparan, dan menghibur bagi seluruh pengguna.
+                        </p>
+                        <p className="text-slate-300 text-sm leading-relaxed">
+                            Setiap putaran, setiap kartu, dan setiap kemenangan diproses menggunakan algoritma RNG (Random Number Generator) yang telah teruji untuk memastikan keadilan bagi setiap pemain.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-slate-800/50 p-6 rounded-xl border border-blue-500/30">
+                            <h3 className="text-lg font-bold text-blue-400 mb-3">Visi Kami</h3>
+                            <ul className="space-y-2 text-sm text-slate-300 list-disc pl-4">
+                                <li>Menjadi platform simulasi #1 di Asia.</li>
+                                <li>Menciptakan komunitas gamer yang solid.</li>
+                                <li>Inovasi teknologi web realtime tercepat.</li>
+                            </ul>
                         </div>
-                        <div className="text-right">
-                            <span className="text-slate-400 text-xs block mb-1">Total Spins</span>
-                            <div className="text-xl font-bold text-yellow-400">{profileData.total_spins || 0}</div>
+                        <div className="bg-slate-800/50 p-6 rounded-xl border border-green-500/30">
+                            <h3 className="text-lg font-bold text-green-400 mb-3">Keamanan & Fair Play</h3>
+                            <ul className="space-y-2 text-sm text-slate-300 list-disc pl-4">
+                                <li>Enkripsi data SSL 256-bit.</li>
+                                <li>Sistem anti-bot & anti-cheat canggih.</li>
+                                <li>Transparansi riwayat transaksi penuh.</li>
+                            </ul>
                         </div>
                     </div>
 
-                    <form onSubmit={handleUpdate} className="space-y-6">
-                        <div className="flex flex-col items-center gap-4">
-                            <div onClick={()=>fileRef.current.click()} className="w-32 h-32 rounded-full bg-slate-800 border-4 border-yellow-500 overflow-hidden cursor-pointer hover:opacity-80 relative group">
-                                <img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/>
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div>
-                            </div>
-                            <input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/>
-                        </div>
-                        <div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div>
-                        <div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div>
-                        
-                        <div className="border-t border-white/10 pt-4">
-                            <button 
-                                type="button"
-                                onClick={() => setShowPasswordUI(!showPasswordUI)}
-                                className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"
-                            >
-                                <span className="text-sm font-bold">Ubah Password</span>
-                                <div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div>
-                            </button>
-                            
-                            {showPasswordUI && (
-                                <div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5">
-                                    <div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
-                                    <div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
-                                    <div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div>
-                                </div>
-                            )}
-                        </div>
-
-                        <button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>
-                        {msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}
-                    </form>
-                </div>
-            )
-        }
-
-        function TopUpPage({ session, setWinMessage }) {
-            const [amount, setAmount] = React.useState(10000);
-            const [reason, setReason] = React.useState('');
-            const [loading, setLoading] = React.useState(false);
-            const [status, setStatus] = React.useState(''); 
-
-            const handleRequest = async (e) => {
-                e.preventDefault();
-                if(!reason) return;
-                setLoading(true);
-                
-                const { error } = await supabase.from('topup_requests').insert([{
-                    user_id: session.user.id,
-                    user_email: session.user.email,
-                    amount: amount,
-                    reason: reason
-                }]);
-
-                if (error) {
-                    alert("Gagal kirim request: " + error.message);
-                } else {
-                    setStatus('sent');
-                    setWinMessage('Request Top Up Terkirim!');
-                    setReason('');
-                }
-                setLoading(false);
-            };
-
-            if (status === 'sent') {
-                return (
-                    <div className="p-8 text-center bg-slate-800/50 rounded-xl border border-green-500/30 max-w-lg mx-auto mt-10">
-                        <div className="text-5xl mb-4">⏳</div>
-                        <h3 className="text-xl font-bold text-white mb-2">Permintaan Terkirim!</h3>
-                        <p className="text-slate-400 mb-4">Admin akan mengecek alasan Anda. Saldo akan masuk otomatis jika disetujui.</p>
-                        <button onClick={() => setStatus('')} className="px-6 py-2 bg-slate-700 rounded hover:bg-slate-600">Buat Baru</button>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="max-w-2xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2>
                     <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
-                        <form onSubmit={handleRequest} className="space-y-6">
+                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2 mb-4">Hubungi Kami</h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-3">Pilih Nominal</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (
-                                        <button 
-                                            key={amt} 
-                                            type="button"
-                                            onClick={() => setAmount(amt)}
-                                            className={`p-4 rounded-xl border transition-all ${amount === amt ? 'bg-yellow-500 text-black border-yellow-500 font-bold ring-2 ring-yellow-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
-                                        >
-                                            {amt.toLocaleString()}
-                                        </button>
-                                    ))}
-                                </div>
+                                <span className="block text-slate-500 text-xs">Email Support</span>
+                                <span className="text-white">support@royalcyber.com</span>
                             </div>
-                            
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Alasan Top Up</label>
-                                <textarea 
-                                    rows="3" 
-                                    value={reason} 
-                                    onChange={e => setReason(e.target.value)} 
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" 
-                                    placeholder="Contoh: Ingin mencoba pola gacor baru..." 
-                                    required 
-                                />
+                                <span className="block text-slate-500 text-xs">Live Chat</span>
+                                <span className="text-white">24/7 Online</span>
                             </div>
-
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:brightness-110 transition shadow-lg">
-                                {loading ? 'MEMPROSES...' : `AJUKAN TOP UP (${amount.toLocaleString()})`}
-                            </button>
-                        </form>
+                            <div>
+                                <span className="block text-slate-500 text-xs">Telegram</span>
+                                <span className="text-white">@RoyalCyberOfficial</span>
+                            </div>
+                            <div>
+                                <span className="block text-slate-500 text-xs">Alamat Kantor</span>
+                                <span className="text-white">Cyber City, Block 777</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
         }
 
-        function FeedbackPage({ session }) {
-            const [title, setTitle] = React.useState('');
-            const [desc, setDesc] = React.useState('');
-            const [image, setImage] = React.useState(null); 
-            const [isSent, setIsSent] = React.useState(false);
+        // --- NEW: SHOP PAGE ---
+        function ShopPage({ session, balance, updateBalance, profileData, refreshProfile }) {
             const [loading, setLoading] = React.useState(false);
-            const fileRef = React.useRef(null);
+            const [ownedItems, setOwnedItems] = React.useState([]);
 
-            const handleImage = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                     if (file.size > 3 * 1024 * 1024) return alert("Maks 3MB");
-                     const reader = new FileReader();
-                     reader.onload = () => setImage(reader.result);
-                     reader.readAsDataURL(file);
-                }
-            };
+            const borders = [
+                { id: 'default', name: 'Default', price: 0, class: 'border-2 border-yellow-500' },
+                { id: 'neon-blue', name: 'Neon Blue', price: 10000, class: 'border-neon-blue' },
+                { id: 'neon-pink', name: 'Neon Pink', price: 50000, class: 'border-neon-pink' },
+                { id: 'gold-king', name: 'Gold King', price: 100000, class: 'border-gold-king' },
+                { id: 'rainbow', name: 'Rainbow', price: 500000, class: 'border-rainbow' },
+            ];
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if(!title || !desc) return;
-                setLoading(true);
-                
-                const { error } = await supabase.from('feedback').insert([{
-                    user_id: session.user.id,
-                    user_email: session.user.email,
-                    title: title,
-                    message: desc,
-                    image_url: image
-                }]);
-
-                if (error) {
-                    alert("Gagal kirim feedback: " + error.message);
-                } else {
-                    setIsSent(true);
-                    setTimeout(() => {
-                        setTitle(''); setDesc(''); setImage(null); setIsSent(false);
-                    }, 2000);
-                }
-                setLoading(false);
-            };
-
-            return (
-                <div className="max-w-2xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Kirim Feedback</h2>
-                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
-                        {isSent ? (
-                            <div className="text-center py-10">
-                                <div className="text-4xl mb-2">✅</div>
-                                <h3 className="text-xl font-bold text-white">Terima Kasih!</h3>
-                                <p className="text-slate-400">Masukan Anda telah kami terima.</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Judul Laporan</label>
-                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" required />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label>
-                                    <textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." required />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label>
-                                    <div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer relative overflow-hidden">
-                                        {image ? (
-                                            <img src={image} className="h-32 mx-auto object-contain" />
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2 text-slate-500">
-                                                <Icons.Image /><span className="text-xs">Klik untuk upload screenshot (Max 3MB)</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input type="file" ref={fileRef} onChange={handleImage} className="hidden" accept="image/*" />
-                                    {image && <button type="button" onClick={() => setImage(null)} className="text-xs text-red-400 mt-2 underline">Hapus Gambar</button>}
-                                </div>
-                                <button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
-                                    {loading ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        function InboxPage({ profileData }) {
-            const [messages, setMessages] = React.useState([]);
-            const [loading, setLoading] = React.useState(true);
-
-            const fetchMessages = async () => {
-                const { data } = await supabase.from('feedback').select('*').order('created_at', { ascending: false });
-                if (data) setMessages(data);
-                setLoading(false);
-            };
-
-            React.useEffect(() => { fetchMessages(); }, []);
-
-            const handleDelete = async (id) => {
-                if(confirm("Hapus pesan ini?")) {
-                    await supabase.from('feedback').delete().eq('id', id);
-                    setMessages(prev => prev.filter(m => m.id !== id));
-                }
-            };
-
-            if (loading) return <div className="p-8 text-center text-slate-500">Memuat pesan...</div>;
-
-            return (
-                <div className="max-w-4xl mx-auto p-6">
-                    <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                        <h2 className="text-2xl font-cyber text-yellow-400">Inbox {profileData.role === 'admin' ? 'Admin' : 'Saya'}</h2>
-                    </div>
-                    <div className="space-y-4">
-                        {messages.length === 0 ? (
-                            <div className="text-center text-slate-500 py-10">Belum ada pesan masuk.</div>
-                        ) : (
-                            messages.map(msg => (
-                                <div key={msg.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition relative group">
-                                    {profileData.role === 'admin' && (
-                                        <button onClick={() => handleDelete(msg.id)} className="absolute top-3 right-3 p-2 bg-slate-900 rounded-full text-slate-500 hover:text-red-500 hover:bg-white transition opacity-0 group-hover:opacity-100">
-                                            <Icons.Trash />
-                                        </button>
-                                    )}
-
-                                    <div className="flex justify-between items-start mb-2 pr-8">
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg">{msg.title}</h3>
-                                            <p className="text-xs text-yellow-500">Dari: {msg.user_email}</p>
-                                        </div>
-                                        <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{msg.message}</p>
-                                    {msg.image_url && (
-                                        <div className="mt-2">
-                                            <p className="text-xs text-slate-500 mb-1">Lampiran:</p>
-                                            <img src={msg.image_url} className="max-h-48 rounded border border-slate-600" />
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        function AdminRequestsPage() {
-            const [requests, setRequests] = React.useState([]);
-            const [loading, setLoading] = React.useState(true);
-
-            const fetchRequests = async () => {
-                const { data } = await supabase.from('topup_requests').select('*').order('created_at', { ascending: false }); 
-                if (data) setRequests(data);
-                setLoading(false);
-            };
-
-            React.useEffect(() => { fetchRequests(); }, []);
-
-            const handleAction = async (req, action) => {
-                if (action === 'approve') {
-                    const { data: userData } = await supabase.from('players').select('balance').eq('id', req.user_id).single();
-                    if (userData) { await supabase.from('players').update({ balance: userData.balance + req.amount }).eq('id', req.user_id); }
-                    await supabase.from('topup_requests').update({ status: 'approved' }).eq('id', req.id);
-                } else if (action === 'reject') {
-                    await supabase.from('topup_requests').update({ status: 'rejected' }).eq('id', req.id);
-                } else if (action === 'delete') {
-                    if(confirm("Hapus data pengajuan ini?")) {
-                        await supabase.from('topup_requests').delete().eq('id', req.id);
-                    }
-                }
-                fetchRequests();
-            };
-
-            if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
-
-            return (
-                <div className="max-w-4xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Pengajuan Top Up</h2>
-                    <div className="space-y-4">
-                        {requests.length === 0 ? (<div className="text-center text-slate-500 py-10 border border-dashed border-slate-700 rounded-xl">Tidak ada data pengajuan.</div>) : (
-                            requests.map(req => (
-                                <div key={req.id} className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center relative group ${req.status === 'pending' ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-70 hover:opacity-100'}`}>
-                                    
-                                    <button onClick={() => handleAction(req, 'delete')} className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition">
-                                        <Icons.Trash />
-                                    </button>
-
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className={`font-bold text-lg ${req.status === 'approved' ? 'text-green-500' : req.status === 'rejected' ? 'text-red-500' : 'text-yellow-400'}`}>
-                                                {req.status === 'approved' ? '✓ ' : req.status === 'rejected' ? '✕ ' : '+ '}{req.amount.toLocaleString()}
-                                            </span>
-                                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">{req.user_email}</span>
-                                            {req.status !== 'pending' && <span className="text-[10px] uppercase border border-slate-600 px-1 rounded text-slate-500">{req.status}</span>}
-                                        </div>
-                                        <p className="text-sm text-slate-300 italic">"{req.reason}"</p>
-                                        <span className="text-[10px] text-slate-500">{new Date(req.created_at).toLocaleString()}</span>
-                                    </div>
-                                    
-                                    {req.status === 'pending' && (
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <button onClick={() => handleAction(req, 'reject')} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded hover:bg-red-900/50 transition text-sm font-bold">TOLAK</button>
-                                            <button onClick={() => handleAction(req, 'approve')} className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition text-sm font-bold shadow-lg">TERIMA (ACC)</button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        // --- GLOBAL CHAT COMPONENT ---
-        function GlobalChat({ session, profileData }) {
-            const [isOpen, setIsOpen] = React.useState(false);
-            const [message, setMessage] = React.useState('');
-            const [chats, setChats] = React.useState([]);
-            const [image, setImage] = React.useState(null);
-            const messagesEndRef = React.useRef(null);
-            const fileRef = React.useRef(null);
-
-            const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-
-            // Realtime & Fetch
             React.useEffect(() => {
-                const fetchChats = async () => {
-                    const { data } = await supabase.from('global_chat').select('*').order('created_at', { ascending: false }).limit(50);
-                    if(data) setChats(data.reverse());
+                const fetchInventory = async () => {
+                    const { data } = await supabase.from('players').select('inventory').eq('id', session.user.id).single();
+                    if (data && data.inventory) setOwnedItems(data.inventory);
                 };
-                fetchChats();
-
-                const subscription = supabase
-                    .channel('public:global_chat')
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_chat' }, (payload) => {
-                        setChats(prev => [...prev, payload.new]);
-                        setTimeout(scrollToBottom, 100);
-                    })
-                    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'global_chat' }, (payload) => {
-                        if (!payload.old.id) {
-                             setChats([]);
-                        } else {
-                             setChats(prev => prev.filter(c => c.id !== payload.old.id));
-                        }
-                        fetchChats();
-                    })
-                    .subscribe();
-
-                return () => supabase.removeChannel(subscription);
+                fetchInventory();
             }, []);
 
-            React.useEffect(() => { if(isOpen) scrollToBottom(); }, [isOpen, chats]);
+            const handleBuy = async (item) => {
+                if (balance < item.price) return alert("Saldo tidak cukup!");
+                if (!confirm(`Beli ${item.name} seharga ${item.price.toLocaleString()}?`)) return;
 
-            const handleSend = async (e) => {
-                e.preventDefault();
-                if ((!message.trim() && !image) || !session) return;
-                const newMessage = { user_id: session.user.id, user_email: session.user.email, user_name: profileData.full_name || 'Guest', user_avatar: profileData.avatar_url, message: message.trim(), image_url: image };
-                setMessage(''); setImage(null);
-                await supabase.from('global_chat').insert([newMessage]);
+                setLoading(true);
+                const newBalance = balance - item.price;
+                const newInventory = [...ownedItems, item.id];
+
+                // Update DB
+                const { error } = await supabase.from('players').update({ 
+                    balance: newBalance,
+                    inventory: newInventory
+                }).eq('id', session.user.id);
+
+                if (!error) {
+                    updateBalance(newBalance);
+                    setOwnedItems(newInventory);
+                    alert("Pembelian Berhasil!");
+                } else {
+                    alert("Gagal beli: " + error.message);
+                }
+                setLoading(false);
             };
 
-            const handleImageSelect = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 2 * 1024 * 1024) return alert("Max Image 2MB");
-                    const reader = new FileReader(); reader.onload = () => setImage(reader.result); reader.readAsDataURL(file);
+            const handleEquip = async (itemId) => {
+                setLoading(true);
+                const { error } = await supabase.from('players').update({ avatar_border: itemId }).eq('id', session.user.id);
+                if (!error) {
+                    refreshProfile(); // Reload profile data to update UI immediately
+                    alert("Border terpasang!");
                 }
+                setLoading(false);
             };
-
-            // Admin Clear All
-            const handleClearAll = async () => {
-                if(confirm("Hapus SEMUA pesan chat global? Tindakan ini tidak bisa dibatalkan.")) {
-                    const { error } = await supabase.from('global_chat').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
-                    if(error) alert("Gagal hapus chat");
-                }
-            }
 
             return (
-                <>
-                    <button onClick={() => setIsOpen(!isOpen)} className={`fixed bottom-4 right-4 z-50 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${isOpen ? 'bg-red-600 rotate-180' : 'bg-gradient-to-r from-blue-600 to-purple-600 animate-bounce'}`}>{isOpen ? <Icons.Minimize className="text-white" /> : <Icons.Chat className="text-white" />}</button>
-                    {isOpen && (
-                        <div className="fixed bottom-20 right-4 w-full max-w-sm h-[500px] bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex flex-col z-40 animate-fade-in overflow-hidden">
-                            <div className="p-3 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10 flex justify-between items-center">
-                                <h3 className="font-cyber font-bold text-white flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Global Chat</h3>
-                                {profileData.role === 'admin' && (
-                                    <button onClick={handleClearAll} className="text-[10px] bg-red-600 px-2 py-1 rounded hover:bg-red-500 text-white flex items-center gap-1">
-                                        <Icons.Trash /> Clear All
-                                    </button>
-                                )}
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                {chats.map((chat, i) => {
-                                    const isMe = chat.user_id === session.user.id;
-                                    const isAdminMsg = chat.user_email === 'admin@royal.com' || (chat.user_name && chat.user_name.toLowerCase().includes('admin'));
-                                    return (
-                                        <div key={i} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} chat-bubble`}>
-                                            <div className="flex-shrink-0"><img src={chat.user_avatar || `https://api.dicebear.com/9.x/dylan/svg?seed=${chat.user_name}`} className="w-8 h-8 rounded-full border border-white/20 bg-slate-800 object-cover" /></div>
-                                            <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
-                                                <span className={`text-[10px] mb-0.5 ${isAdminMsg ? 'text-yellow-400 font-bold' : 'text-slate-400'} ${isMe ? 'text-right' : ''}`}>{chat.user_name} {isAdminMsg && '👑'}</span>
-                                                <div className={`p-2 rounded-xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : isAdminMsg ? 'bg-yellow-900/50 border border-yellow-500/30 text-yellow-100 rounded-tl-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'}`}>
-                                                    {chat.message}
-                                                    {chat.image_url && (<img src={chat.image_url} className="mt-2 rounded-lg max-h-32 w-full object-cover cursor-pointer hover:opacity-90" onClick={()=>window.open(chat.image_url)} />)}
-                                                </div>
-                                                <span className="text-[9px] text-slate-600 mt-0.5">{new Date(chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                <div ref={messagesEndRef} />
-                            </div>
-                            {image && (<div className="px-4 pt-2 relative"><div className="bg-slate-800 rounded-lg p-2 flex items-center justify-between"><img src={image} className="h-10 w-10 object-cover rounded" /><button onClick={() => setImage(null)} className="text-red-400 text-xs hover:underline">Hapus</button></div></div>)}
-                            <form onSubmit={handleSend} className="p-3 bg-slate-800 border-t border-white/10 flex gap-2 items-center">
-                                <button type="button" onClick={() => fileRef.current.click()} className="p-2 text-slate-400 hover:text-blue-400 transition"><Icons.Image /></button>
-                                <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleImageSelect} />
-                                <input value={message} onChange={e => setMessage(e.target.value)} placeholder="Kirim pesan..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm text-white focus:border-blue-500 outline-none"/>
-                                <button type="submit" disabled={!message && !image} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition transform active:scale-95"><Icons.Send /></button>
-                            </form>
-                        </div>
-                    )}
-                </>
+                <div className="max-w-4xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Avatar Shop</h2>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {borders.map(item => {
+                            const isOwned = ownedItems.includes(item.id) || item.id === 'default';
+                            const isEquipped = profileData.avatar_border === item.id || (item.id === 'default' && !profileData.avatar_border);
+
+                            return (
+                                <div key={item.id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex flex-col items-center relative group hover:border-yellow-500/50 transition">
+                                    <div className={`w-24 h-24 rounded-full bg-slate-700 mb-4 overflow-hidden relative ${item.class}`}>
+                                        <img src={profileData.avatar_url} className="w-full h-full object-cover opacity-80" />
+                                    </div>
+                                    <h3 className="font-bold text-white mb-1">{item.name}</h3>
+                                    <p className="text-xs text-yellow-400 mb-4">{item.id === 'default' ? 'Gratis' : `${item.price.toLocaleString()} Chip`}</p>
+                                    
+                                    {isEquipped ? (
+                                        <button disabled className="w-full py-2 bg-green-600/50 text-green-200 rounded-lg text-xs font-bold cursor-default">TERPAKAI</button>
+                                    ) : isOwned ? (
+                                        <button onClick={() => handleEquip(item.id)} disabled={loading} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition">PAKAI</button>
+                                    ) : (
+                                        <button onClick={() => handleBuy(item)} disabled={loading || balance < item.price} className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-xs font-bold transition disabled:opacity-50">BELI</button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             );
         }
+
+        function ProfilePage({session,profileData,refreshProfile}){
+            const [email, setEmail] = React.useState(session.user.email); const [password, setPassword] = React.useState(''); const [fullName, setFullName] = React.useState(profileData?.full_name || ''); const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || ''); const [msg, setMsg] = React.useState(''); const [isCropping, setIsCropping] = React.useState(false); const [tempImg, setTempImg] = React.useState(null); const [showPasswordUI, setShowPasswordUI] = React.useState(false); const [oldPassword, setOldPassword] = React.useState(''); const [newPassword, setNewPassword] = React.useState(''); const [confirmPassword, setConfirmPassword] = React.useState(''); const fileRef = React.useRef(null);
+            const handleImageChange = (e) => { if(e.target.files[0]){ if (e.target.files[0].size > 5 * 1024 * 1024) return alert("Maks 5MB"); const r = new FileReader(); r.onload = () => { setTempImg(r.result); setIsCropping(true); }; r.readAsDataURL(e.target.files[0]); } e.target.value = null; };
+            const handleUpdate = async (e) => { e.preventDefault(); setMsg('Menyimpan...'); const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id); if (dbError) { setMsg("Gagal update profil."); return; } if (showPasswordUI) { if (!oldPassword || !newPassword || !confirmPassword) { setMsg("Isi semua kolom password."); return; } if (newPassword !== confirmPassword) { setMsg("Konfirmasi password tidak cocok."); return; } if (newPassword.length < 6) { setMsg("Password minimal 6 karakter."); return; } const { error: verifyError } = await supabase.auth.signInWithPassword({ email: session.user.email, password: oldPassword }); if (verifyError) { setMsg("Password lama salah!"); return; } const { error: updatePassError } = await supabase.auth.updateUser({ password: newPassword }); if (updatePassError) { setMsg("Gagal update password."); return; } setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setShowPasswordUI(false); } setMsg("Berhasil disimpan!"); refreshProfile(); };
+            
+            // Level Calculation for Progress Bar
+            const totalSpins = profileData.total_spins || 0;
+            let nextLevelSpins = 50;
+            let nextLevelName = "Rookie";
+            if (totalSpins >= 1000) { nextLevelSpins = 10000; nextLevelName = "Legend"; } // Cap
+            else if (totalSpins >= 500) { nextLevelSpins = 1000; nextLevelName = "Casino King"; }
+            else if (totalSpins >= 50) { nextLevelSpins = 500; nextLevelName = "High Roller"; }
+            
+            const progressPercent = Math.min(100, (totalSpins / nextLevelSpins) * 100);
+
+            // Get Border Class
+            const getBorderClass = (id) => {
+                if(id === 'neon-blue') return 'border-neon-blue';
+                if(id === 'neon-pink') return 'border-neon-pink';
+                if(id === 'gold-king') return 'border-gold-king';
+                if(id === 'rainbow') return 'border-rainbow';
+                return 'border-2 border-yellow-500';
+            };
+
+            return (<div className="max-w-xl mx-auto p-6 relative">{isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}<h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2>
+            
+            {/* LEVEL INFO CARD */}
+            <div className="mb-6 p-5 bg-slate-800 rounded-xl border border-yellow-500/20 shadow-lg">
+                <div className="flex justify-between items-end mb-2">
+                    <div>
+                        <span className="text-slate-400 text-xs block mb-1 uppercase tracking-widest">Current Rank</span>
+                        <div className="text-2xl font-black text-white flex items-center gap-2 italic"><Icons.Crown className="text-yellow-500 w-6 h-6"/> {profileData.title}</div>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-yellow-400 font-bold text-sm">{totalSpins} / {nextLevelSpins}</span>
+                        <span className="text-slate-500 text-[10px] block">Menuju {nextLevelName}</span>
+                    </div>
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                    <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                </div>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-6"><div className="flex flex-col items-center gap-4"><div onClick={()=>fileRef.current.click()} className={`w-32 h-32 rounded-full bg-slate-800 overflow-hidden cursor-pointer hover:opacity-80 relative group ${getBorderClass(profileData.avatar_border)}`}><img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/><div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div></div><input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/></div><div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div><div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div><div className="border-t border-white/10 pt-4"><button type="button" onClick={() => setShowPasswordUI(!showPasswordUI)} className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"><span className="text-sm font-bold">Ubah Password</span><div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div></button>{showPasswordUI && (<div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5"><div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div></div>)}</div><button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>{msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}</form></div>)
+        }
+        
+        function TopUpPage({ session, setWinMessage }) { const [amount, setAmount] = React.useState(10000); const [reason, setReason] = React.useState(''); const [loading, setLoading] = React.useState(false); const [status, setStatus] = React.useState(''); const handleRequest = async (e) => { e.preventDefault(); if(!reason) return; setLoading(true); const { error } = await supabase.from('topup_requests').insert([{ user_id: session.user.id, user_email: session.user.email, amount: amount, reason: reason }]); if (error) { alert("Gagal kirim request: " + error.message); } else { setStatus('sent'); setWinMessage('Request Top Up Terkirim!'); setReason(''); } setLoading(false); }; if (status === 'sent') { return (<div className="p-8 text-center bg-slate-800/50 rounded-xl border border-green-500/30 max-w-lg mx-auto mt-10"><div className="text-5xl mb-4">⏳</div><h3 className="text-xl font-bold text-white mb-2">Permintaan Terkirim!</h3><p className="text-slate-400 mb-4">Admin akan mengecek alasan Anda. Saldo akan masuk otomatis jika disetujui.</p><button onClick={() => setStatus('')} className="px-6 py-2 bg-slate-700 rounded hover:bg-slate-600">Buat Baru</button></div>); } return (<div className="max-w-2xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2><div className="bg-slate-800/50 p-6 rounded-xl border border-white/10"><form onSubmit={handleRequest} className="space-y-6"><div><label className="block text-sm text-slate-400 mb-3">Pilih Nominal</label><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (<button key={amt} type="button" onClick={() => setAmount(amt)} className={`p-4 rounded-xl border transition-all ${amount === amt ? 'bg-yellow-500 text-black border-yellow-500 font-bold ring-2 ring-yellow-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}>{amt.toLocaleString()}</button>))}</div></div><div><label className="block text-sm text-slate-400 mb-1">Alasan Top Up</label><textarea rows="3" value={reason} onChange={e => setReason(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Ingin mencoba pola gacor baru..." required /></div><button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:brightness-110 transition shadow-lg">{loading ? 'MEMPROSES...' : `AJUKAN TOP UP (${amount.toLocaleString()})`}</button></form></div></div>); }
+        function FeedbackPage({ session }) { const [title, setTitle] = React.useState(''); const [desc, setDesc] = React.useState(''); const [image, setImage] = React.useState(null); const [isSent, setIsSent] = React.useState(false); const [loading, setLoading] = React.useState(false); const fileRef = React.useRef(null); const handleImage = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 3 * 1024 * 1024) return alert("Maks 3MB"); const reader = new FileReader(); reader.onload = () => setImage(reader.result); reader.readAsDataURL(file); } }; const handleSubmit = async (e) => { e.preventDefault(); if(!title || !desc) return; setLoading(true); const { error } = await supabase.from('feedback').insert([{ user_id: session.user.id, user_email: session.user.email, title: title, message: desc, image_url: image }]); if (error) { alert("Gagal kirim feedback: " + error.message); } else { setIsSent(true); setTimeout(() => { setTitle(''); setDesc(''); setImage(null); setIsSent(false); }, 2000); } setLoading(false); }; return (<div className="max-w-2xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Kirim Feedback</h2><div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">{isSent ? (<div className="text-center py-10"><div className="text-4xl mb-2">✅</div><h3 className="text-xl font-bold text-white">Terima Kasih!</h3><p className="text-slate-400">Masukan Anda telah kami terima.</p></div>) : (<form onSubmit={handleSubmit} className="space-y-4"><div><label className="block text-sm text-slate-400 mb-1">Judul Laporan</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" required /></div><div><label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label><textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." required /></div><div><label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label><div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer relative overflow-hidden">{image ? (<img src={image} className="h-32 mx-auto object-contain" />) : (<div className="flex flex-col items-center gap-2 text-slate-500"><Icons.Image /><span className="text-xs">Klik untuk upload screenshot (Max 3MB)</span></div>)}</div><input type="file" ref={fileRef} onChange={handleImage} className="hidden" accept="image/*" />{image && <button type="button" onClick={() => setImage(null)} className="text-xs text-red-400 mt-2 underline">Hapus Gambar</button>}</div><button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">{loading ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}</button></form>)}</div></div>); }
+        function InboxPage({ profileData }) { const [messages, setMessages] = React.useState([]); const [loading, setLoading] = React.useState(true); React.useEffect(() => { const fetchMessages = async () => { const { data, error } = await supabase.from('feedback').select('*').order('created_at', { ascending: false }); if (data) setMessages(data); setLoading(false); }; fetchMessages(); }, []); const handleDelete = async (id) => { if(confirm("Hapus pesan ini?")) { await supabase.from('feedback').delete().eq('id', id); setMessages(prev => prev.filter(m => m.id !== id)); } }; if (loading) return <div className="p-8 text-center text-slate-500">Memuat pesan...</div>; return (<div className="max-w-4xl mx-auto p-6"><div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4"><h2 className="text-2xl font-cyber text-yellow-400">Inbox {profileData.role === 'admin' ? 'Admin' : 'Saya'}</h2></div><div className="space-y-4">{messages.length === 0 ? (<div className="text-center text-slate-500 py-10">Belum ada pesan masuk.</div>) : (messages.map(msg => (<div key={msg.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition relative group">{profileData.role === 'admin' && (<button onClick={() => handleDelete(msg.id)} className="absolute top-3 right-3 p-2 bg-slate-900 rounded-full text-slate-500 hover:text-red-500 hover:bg-white transition opacity-0 group-hover:opacity-100"><Icons.Trash /></button>)}<div className="flex justify-between items-start mb-2 pr-8"><div><h3 className="font-bold text-white text-lg">{msg.title}</h3><p className="text-xs text-yellow-500">Dari: {msg.user_email}</p></div><span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleDateString()}</span></div><p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{msg.message}</p>{msg.image_url && (<div className="mt-2"><p className="text-xs text-slate-500 mb-1">Lampiran:</p><img src={msg.image_url} className="max-h-48 rounded border border-slate-600" /></div>)}</div>)))}</div></div>); }
+        function AdminRequestsPage() { const [requests, setRequests] = React.useState([]); const [loading, setLoading] = React.useState(true); const fetchRequests = async () => { const { data } = await supabase.from('topup_requests').select('*').order('created_at', { ascending: false }); if (data) setRequests(data); setLoading(false); }; React.useEffect(() => { fetchRequests(); }, []); const handleAction = async (req, action) => { if (action === 'approve') { const { data: userData } = await supabase.from('players').select('balance').eq('id', req.user_id).single(); if (userData) { await supabase.from('players').update({ balance: userData.balance + req.amount }).eq('id', req.user_id); } await supabase.from('topup_requests').update({ status: 'approved' }).eq('id', req.id); } else if (action === 'reject') { await supabase.from('topup_requests').update({ status: 'rejected' }).eq('id', req.id); } else if (action === 'delete') { if(confirm("Hapus data pengajuan ini?")) { await supabase.from('topup_requests').delete().eq('id', req.id); } } fetchRequests(); }; if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>; return (<div className="max-w-4xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Pengajuan Top Up</h2><div className="space-y-4">{requests.length === 0 ? (<div className="text-center text-slate-500 py-10 border border-dashed border-slate-700 rounded-xl">Tidak ada data pengajuan.</div>) : (requests.map(req => (<div key={req.id} className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center relative group ${req.status === 'pending' ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-70 hover:opacity-100'}`}><button onClick={() => handleAction(req, 'delete')} className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition"><Icons.Trash /></button><div><div className="flex items-center gap-2 mb-1"><span className={`font-bold text-lg ${req.status === 'approved' ? 'text-green-500' : req.status === 'rejected' ? 'text-red-500' : 'text-yellow-400'}`}>{req.status === 'approved' ? '✓ ' : req.status === 'rejected' ? '✕ ' : '+ '}{req.amount.toLocaleString()}</span><span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">{req.user_email}</span>{req.status !== 'pending' && <span className="text-[10px] uppercase border border-slate-600 px-1 rounded text-slate-500">{req.status}</span>}</div><p className="text-sm text-slate-300 italic">"{req.reason}"</p><span className="text-[10px] text-slate-500">{new Date(req.created_at).toLocaleString()}</span></div>{req.status === 'pending' && (<div className="flex gap-2 w-full sm:w-auto"><button onClick={() => handleAction(req, 'reject')} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded hover:bg-red-900/50 transition text-sm font-bold">TOLAK</button><button onClick={() => handleAction(req, 'approve')} className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition text-sm font-bold shadow-lg">TERIMA (ACC)</button></div>)}</div>)))}</div></div>); }
+        function GlobalChat({ session, profileData }) { const [isOpen, setIsOpen] = React.useState(false); const [message, setMessage] = React.useState(''); const [chats, setChats] = React.useState([]); const [image, setImage] = React.useState(null); const messagesEndRef = React.useRef(null); const fileRef = React.useRef(null); const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); React.useEffect(() => { const fetchChats = async () => { const { data } = await supabase.from('global_chat').select('*').order('created_at', { ascending: false }).limit(50); if(data) setChats(data.reverse()); }; fetchChats(); const subscription = supabase.channel('public:global_chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_chat' }, (payload) => { setChats(prev => [...prev, payload.new]); setTimeout(scrollToBottom, 100); }).on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'global_chat' }, (payload) => { if (!payload.old.id) { setChats([]); } else { setChats(prev => prev.filter(c => c.id !== payload.old.id)); } fetchChats(); }).subscribe(); return () => supabase.removeChannel(subscription); }, []); React.useEffect(() => { if(isOpen) scrollToBottom(); }, [isOpen, chats]); const handleSend = async (e) => { e.preventDefault(); if ((!message.trim() && !image) || !session) return; const newMessage = { user_id: session.user.id, user_email: session.user.email, user_name: profileData.full_name || 'Guest', user_avatar: profileData.avatar_url, message: message.trim(), image_url: image }; setMessage(''); setImage(null); await supabase.from('global_chat').insert([newMessage]); }; const handleImageSelect = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 2 * 1024 * 1024) return alert("Max Image 2MB"); const reader = new FileReader(); reader.onload = () => setImage(reader.result); reader.readAsDataURL(file); } }; const handleClearAll = async () => { if(confirm("Hapus SEMUA pesan chat global? Tindakan ini tidak bisa dibatalkan.")) { const { error } = await supabase.from('global_chat').delete().neq('id', '00000000-0000-0000-0000-000000000000'); if(error) alert("Gagal hapus chat"); } }; return (<>{/* Chat Button Floating */}<button onClick={() => setIsOpen(!isOpen)} className={`fixed bottom-4 right-4 z-50 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${isOpen ? 'bg-red-600 rotate-180' : 'bg-gradient-to-r from-blue-600 to-purple-600 animate-bounce'}`}>{isOpen ? <Icons.Minimize className="text-white" /> : <Icons.Chat className="text-white" />}</button>{/* Chat Window */}{isOpen && (<div className="fixed bottom-20 right-4 w-full max-w-sm h-[500px] bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex flex-col z-40 animate-fade-in overflow-hidden"><div className="p-3 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10 flex justify-between items-center"><h3 className="font-cyber font-bold text-white flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Global Chat</h3>{profileData.role === 'admin' && (<button onClick={handleClearAll} className="text-[10px] bg-red-600 px-2 py-1 rounded hover:bg-red-500 text-white flex items-center gap-1"><Icons.Trash /> Clear All</button>)}</div><div className="flex-1 overflow-y-auto p-4 space-y-3">{chats.map((chat, i) => { const isMe = chat.user_id === session.user.id; const isAdminMsg = chat.user_email === 'admin@royal.com' || (chat.user_name && chat.user_name.toLowerCase().includes('admin')); return (<div key={i} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} chat-bubble`}><div className="flex-shrink-0"><img src={chat.user_avatar || `https://api.dicebear.com/9.x/dylan/svg?seed=${chat.user_name}`} className="w-8 h-8 rounded-full border border-white/20 bg-slate-800 object-cover" /></div><div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}><span className={`text-[10px] mb-0.5 ${isAdminMsg ? 'text-yellow-400 font-bold' : 'text-slate-400'} ${isMe ? 'text-right' : ''}`}>{chat.user_name} {isAdminMsg && '👑'}</span><div className={`p-2 rounded-xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : isAdminMsg ? 'bg-yellow-900/50 border border-yellow-500/30 text-yellow-100 rounded-tl-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'}`}>{chat.message}{chat.image_url && (<img src={chat.image_url} className="mt-2 rounded-lg max-h-32 w-full object-cover cursor-pointer hover:opacity-90" onClick={()=>window.open(chat.image_url)} />)}</div><span className="text-[9px] text-slate-600 mt-0.5">{new Date(chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div></div>); })}<div ref={messagesEndRef} /></div>{image && (<div className="px-4 pt-2 relative"><div className="bg-slate-800 rounded-lg p-2 flex items-center justify-between"><img src={image} className="h-10 w-10 object-cover rounded" /><button onClick={() => setImage(null)} className="text-red-400 text-xs hover:underline">Hapus</button></div></div>)}<form onSubmit={handleSend} className="p-3 bg-slate-800 border-t border-white/10 flex gap-2 items-center"><button type="button" onClick={() => fileRef.current.click()} className="p-2 text-slate-400 hover:text-blue-400 transition"><Icons.Image /></button><input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleImageSelect} /><input value={message} onChange={e => setMessage(e.target.value)} placeholder="Kirim pesan..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm text-white focus:border-blue-500 outline-none"/><button type="submit" disabled={!message && !image} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition transform active:scale-95"><Icons.Send /></button></form></div>)}</>); }
 
         // --- DASHBOARD ---
         function Dashboard({ session, onLogout }) {
@@ -1156,7 +846,7 @@
             const [activeGame, setActiveGame] = React.useState(null);
             const [balance, setBalance] = React.useState(0);
             const [winMessage, setWinMessage] = React.useState('Selamat Datang');
-            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0 });
+            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default' });
 
             const loadUserData = async () => {
                 try {
@@ -1168,7 +858,8 @@
                             avatar_url: data.avatar_url, 
                             role: data.role || 'user',
                             title: data.title || 'Newbie',
-                            total_spins: data.total_spins || 0
+                            total_spins: data.total_spins || 0,
+                            avatar_border: data.avatar_border || 'default'
                         }); 
                     }
                     else if (error && error.code === 'PGRST116') {
@@ -1179,7 +870,8 @@
                             avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}`, 
                             role: 'user',
                             title: 'Newbie',
-                            total_spins: 0
+                            total_spins: 0,
+                            avatar_border: 'default'
                         };
                         await supabase.from('players').insert([initData]);
                         setBalance(10000); setProfileData(initData);
@@ -1188,40 +880,42 @@
             };
             React.useEffect(() => { loadUserData(); }, [session]);
 
-            // NEW: Handle Game Result & Update Level Logic
             const checkLevelUp = (spins) => {
                 if (spins >= 1000) return 'Casino King';
                 if (spins >= 500) return 'High Roller';
-                if (spins >= 50) return 'Rookie'; // Adjusted for quicker testing
+                if (spins >= 50) return 'Rookie';
                 return 'Newbie';
             };
 
             const updateBalance = async (newBal, isSpin = false) => { 
                 setBalance(newBal);
-                
                 const updates = { balance: newBal };
-                
                 if (isSpin) {
                     const newSpins = (profileData.total_spins || 0) + 1;
                     const newTitle = checkLevelUp(newSpins);
-                    
                     updates.total_spins = newSpins;
                     updates.title = newTitle;
-
-                    // Update local state immediately for UI responsiveness
                     setProfileData(prev => ({ ...prev, total_spins: newSpins, title: newTitle }));
                 }
-
                 await supabase.from('players').update(updates).eq('id', session.user.id); 
+            };
+
+            const getBorderClass = (id) => {
+                if(id === 'neon-blue') return 'border-neon-blue';
+                if(id === 'neon-pink') return 'border-neon-pink';
+                if(id === 'gold-king') return 'border-gold-king';
+                if(id === 'rainbow') return 'border-rainbow';
+                return 'border-2 border-yellow-500';
             };
             
             const renderContent = () => {
                 let content = null;
                 if (view === 'profile') content = <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />;
                 else if (view === 'topup') content = <TopUpPage session={session} setWinMessage={setWinMessage} />;
-                else if (view === 'info') content = <div className="p-6 text-slate-300"><h2 className="text-2xl text-yellow-400 mb-4">Info</h2><p>Aplikasi Demo Casino React + Supabase.</p></div>;
+                else if (view === 'info') content = <InfoPage />;
                 else if (view === 'pola') content = <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Pola Gacor</h2><div className="bg-slate-800 p-4 rounded border border-green-500/30 text-green-400">Pola Pagi: Auto 20x - Winrate 80%</div></div>;
                 else if (view === 'feedback') content = <FeedbackPage session={session} />;
+                else if (view === 'shop') content = <ShopPage session={session} balance={balance} updateBalance={updateBalance} profileData={profileData} refreshProfile={loadUserData} />;
                 else if (view === 'inbox') content = <InboxPage profileData={profileData} />; 
                 else if (view === 'requests') content = <AdminRequestsPage />;
                 else if (view === 'game') {
@@ -1245,35 +939,19 @@
                 <div className="min-h-screen flex bg-[#020617]">
                     <aside className="w-64 bg-slate-900 border-r border-white/5 hidden md:flex flex-col">
                         <div className="p-6 border-b border-white/5 flex items-center gap-2 text-yellow-500"><Icons.Crown /> <span className="font-cyber font-bold text-xl">ROYAL</span></div>
-                        
-                        {/* PROFILE SECTION CLICKABLE */}
-                        <div 
-                            onClick={() => setView('profile')}
-                            className="p-4 border-b border-white/5 flex gap-3 items-center cursor-pointer hover:bg-white/5 transition-colors group"
-                        >
-                            <div className="w-12 h-12 rounded-full bg-slate-800 overflow-hidden border-2 border-yellow-500 relative">
+                        <div onClick={() => setView('profile')} className="p-4 border-b border-white/5 flex gap-3 items-center cursor-pointer hover:bg-white/5 transition-colors group">
+                            <div className={`w-12 h-12 rounded-full bg-slate-800 overflow-hidden relative ${getBorderClass(profileData.avatar_border)}`}>
                                 <img src={profileData.avatar_url} className="w-full h-full object-cover"/>
                             </div>
                             <div className="truncate flex-1">
                                 <div className="text-sm font-bold group-hover:text-yellow-400 transition-colors truncate">{profileData.full_name}</div>
-                                <div className="flex items-center gap-1 mt-1">
-                                    <span className="text-[10px] bg-yellow-600 text-black px-1.5 rounded font-bold uppercase">{profileData.title}</span>
-                                </div>
+                                <div className="flex items-center gap-1 mt-1"><span className="text-[10px] bg-yellow-600 text-black px-1.5 rounded font-bold uppercase">{profileData.title}</span></div>
                                 <div className="text-[10px] text-slate-500 mt-0.5">Lvl: {Math.floor((profileData.total_spins || 0) / 10)}</div>
                             </div>
                         </div>
-
                         <nav className="flex-1 p-4 space-y-1">
-                            {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
-                            {profileData.role === 'admin' && (
-                                <>
-                                    <div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div>
-                                    <button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}>
-                                        <Icons.Inbox /> Inbox
-                                    </button>
-                                    <button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button>
-                                </>
-                            )}
+                            {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'shop',l:'Avatar Shop',i:Icons.ShoppingBag},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
+                            {profileData.role === 'admin' && (<><div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div><button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}><Icons.Inbox /> Inbox</button><button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button></>)}
                             <div className="my-4 border-t border-white/5"></div>
                             <button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button>
                         </nav>
@@ -1282,20 +960,21 @@
                     <main className="flex-1 h-screen overflow-y-auto flex flex-col">
                         <header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10">
                             <div className="md:hidden font-cyber text-yellow-500">ROYAL</div>
-                            
-                            {/* HEADER - Removed duplicate profile, kept balance only */}
-                            <div className="flex-1"></div>
+                            <div onClick={() => setView('profile')} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition">
+                                <div className="hidden md:block text-right"><div className="font-bold text-white text-sm">{profileData.full_name}</div><div className="text-[10px] text-yellow-400 font-bold uppercase">{profileData.title}</div></div>
+                                <div className={`w-8 h-8 rounded-full overflow-hidden ${getBorderClass(profileData.avatar_border)}`}><img src={profileData.avatar_url} className="w-full h-full object-cover"/></div>
+                            </div>
                             <div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div>
                         </header>
                         <div className="p-4 md:p-8 flex-1">{renderContent()}</div>
                         <div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3">
                             <button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button>
                             <button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button>
+                            <button onClick={()=>setView('shop')} className="text-slate-400"><Icons.ShoppingBag/></button>
                             {profileData.role === 'admin' && <button onClick={()=>setView('requests')} className="text-green-500"><Icons.FileText/></button>}
                             <button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button>
                         </div>
                     </main>
-                    {/* GLOBAL CHAT ADDED HERE */}
                     <GlobalChat session={session} profileData={profileData} />
                 </div>
             );
