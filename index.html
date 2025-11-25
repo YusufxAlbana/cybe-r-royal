@@ -20,7 +20,7 @@
         .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .glow-btn:hover { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
         
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
@@ -35,12 +35,13 @@
         .drag-area:active { cursor: grabbing; }
         .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #eab308; cursor: pointer; border-radius: 50%; }
         
-        /* GAME STYLES */
+        /* ANIMATIONS */
         .wheel-container { transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        
         .slot-spinning .slot-symbol { animation: slot-spin 0.1s infinite linear; }
         @keyframes slot-spin { 0% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
 
-        /* Big Win Animation */
+        /* Big Win Effects */
         @keyframes explode { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes shake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); } 20%, 40%, 60%, 80% { transform: translate(5px, 5px); } }
         @keyframes coin-fall { 0% { transform: translateY(-100vh) rotate(0deg); } 100% { transform: translateY(100vh) rotate(360deg); } }
@@ -57,10 +58,6 @@
         .highlow-card-back { background: linear-gradient(135deg, #eab308, #ca8a04); transform: rotateY(180deg); color: black; font-weight: bold; font-size: 3rem; border: 2px solid #fef08a; }
         .highlow-card-back.win { background: linear-gradient(135deg, #22c55e, #15803d); border-color: #86efac; color: white; }
         .highlow-card-back.lose { background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #fca5a5; color: white; }
-        
-        /* Crash Game Rocket */
-        @keyframes rocket-fly { 0% { transform: translate(0,0); } 100% { transform: translate(10px, -10px); } }
-        .rocket-anim { animation: rocket-fly 0.5s infinite alternate ease-in-out; }
 
         /* Chat Animation */
         @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -95,7 +92,7 @@
                         eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }),
                         order: () => ({ data: [], error: null }),
                         limit: () => ({ data: [], error: null }),
-                        ilike: () => ({ data: [], error: null }) // For search
+                        ilike: () => ({ data: [], error: null }) 
                     }), 
                     insert: async () => ({ error: null }), 
                     update: async () => ({ error: 'Offline', eq: () => ({}) }), 
@@ -147,8 +144,7 @@
             Dices: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg>
         };
 
-        // --- COMPONENTS DEFINED BEFORE USE ---
-
+        // --- UTILS ---
         function BetControl({ bet, setBet, balance }) {
             const minBet = 100;
             const maxBet = Math.min(5000, balance > 0 ? balance : 5000); 
@@ -170,26 +166,450 @@
             );
         }
 
-        // ImageCropper, AuthPage, GameAds... (Sama seperti V12)
-        // Saya akan menyederhanakan komponen yang tidak berubah untuk menghemat karakter, namun tetap berfungsi penuh.
-        function ImageCropper({ imageSrc, onCancel, onCrop }) { const [zoom, setZoom] = React.useState(1); const [minZoom, setMinZoom] = React.useState(0.1); const [position, setPosition] = React.useState({ x: 0, y: 0 }); const [dragging, setDragging] = React.useState(false); const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 }); const imgRef = React.useRef(null); const CONTAINER_SIZE = 280; React.useEffect(() => { const img = new Image(); img.src = imageSrc; img.onload = () => { const fitZoom = Math.max(CONTAINER_SIZE / img.naturalWidth, CONTAINER_SIZE / img.naturalHeight); setZoom(fitZoom); setMinZoom(fitZoom * 0.5); }; }, [imageSrc]); const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); }; const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); }; const handleMouseUp = () => setDragging(false); const handleSave = () => { const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 300); if(imgRef.current) { const sf = 300 / CONTAINER_SIZE; const iw = imgRef.current.naturalWidth * zoom * sf; const ih = imgRef.current.naturalHeight * zoom * sf; const dx = (300 - iw) / 2 + (position.x * sf); const dy = (300 - ih) / 2 + (position.y * sf); ctx.save(); ctx.beginPath(); ctx.arc(150, 150, 150, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(imgRef.current, dx, dy, iw, ih); ctx.restore(); } onCrop(canvas.toDataURL('image/jpeg', 0.7)); }; return (<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}><div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl"><h3 className="text-xl font-bold text-white mb-4 text-center">Sesuaikan Foto</h3><div className="flex justify-center mb-6 select-none"><div className="crop-wrapper"><div className="crop-overlay"></div><div className="drag-area" onMouseDown={handleMouseDown} onTouchStart={(e)=>{setDragging(true); setLastPos({x:e.touches[0].clientX, y:e.touches[0].clientY})}}><img ref={imgRef} src={imageSrc} className="absolute max-w-none pointer-events-none transition-transform duration-75" style={{ transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${zoom})`, left: '50%', top: '50%' }}/></div></div></div><div className="mb-6 px-4"><input type="range" min={minZoom} max={minZoom * 5} step={minZoom / 20} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb"/></div><div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-700 text-white font-bold flex justify-center gap-2 hover:bg-slate-600"><Icons.X/> Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400"><Icons.Check/> Simpan</button></div></div></div>); }
-        function AuthPage() { const [isRegister, setIsRegister] = React.useState(false); const [email, setEmail] = React.useState(''); const [fullName, setFullName] = React.useState(''); const [password, setPassword] = React.useState(''); const [loading, setLoading] = React.useState(false); const [errorMsg, setErrorMsg] = React.useState(''); const [successMsg, setSuccessMsg] = React.useState(''); const handleAuth = async (e) => { e.preventDefault(); setLoading(true); setErrorMsg(''); setSuccessMsg(''); const cleanEmail = email.trim(); try { if (isRegister) { if (!fullName) throw new Error("Nama Lengkap wajib diisi!"); const { error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { data: { full_name: fullName } } }); if (error) throw error; setSuccessMsg("Daftar Berhasil! Silakan Login."); } else { const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password }); if (error) throw error; } } catch (error) { let msg = error.message; if (msg.includes("fetch")) { localStorage.setItem('sb-session', JSON.stringify({ user: { id: 'local_'+cleanEmail, email: cleanEmail, user_metadata: { full_name: fullName || 'Guest' } } })); window.location.reload(); return; } if (msg.includes("Invalid login")) msg = "Email/Password salah."; setErrorMsg(msg); } finally { setLoading(false); } }; return (<div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] relative"><div className="absolute inset-0 pointer-events-none"><div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 to-blue-900/20"></div></div><div className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10"><div className="text-center mb-6"><h1 className="text-3xl font-bold text-yellow-500 font-cyber tracking-widest">ROYAL CYBER</h1></div><div className="flex border-b border-white/10 mb-6"><button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button><button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button></div><form onSubmit={handleAuth} className="space-y-4">{errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm">{errorMsg}</div>}{successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm">{successMsg}</div>}{isRegister && (<div className="relative group"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.User /></div><input type="text" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Nama Lengkap" value={fullName} onChange={(e)=>setFullName(e.target.value)}/></div>)}<div className="relative group"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/></div><div className="relative group"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.Lock /></div><input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/></div><button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber glow-btn mt-4">{loading ? 'LOADING...' : (isRegister ? 'DAFTAR' : 'MASUK')}</button></form></div></div>); }
-        function GameAds() { const ads = ["https://picsum.photos/seed/ad1/400/150", "https://picsum.photos/seed/ad2/400/150", "https://picsum.photos/seed/ad3/400/150"]; const [currentAd, setCurrentAd] = React.useState(0); React.useEffect(() => { const t = setInterval(() => setCurrentAd(p => (p+1)%ads.length), 5000); return () => clearInterval(t); }, []); return (<div className="mt-8 w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-lg border border-white/10 relative h-24 sm:h-32 bg-slate-800">{ads.map((ad, index) => (<img key={index} src={ad} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentAd ? 'opacity-100' : 'opacity-0'}`} />))}<div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">IKLAN</div></div>); }
+        // --- COMPONENTS ---
 
-        // --- 5 GAMES ---
-        // Game 1: Cyber Slots (5x3)
-        function GameSlots({ balance, updateBalance, setWinMessage }) { const SYMBOLS = [{id:'Z', icon:'⚡', val:100, color:'text-yellow-400'}, {id:'7', icon:'7️⃣', val:50, color:'text-red-500'}, {id:'D', icon:'💎', val:20, color:'text-cyan-400'}, {id:'K', icon:'👑', val:10, color:'text-purple-400'}, {id:'C', icon:'🍒', val:5, color:'text-pink-500'}]; const [grid, setGrid] = React.useState(() => Array.from({ length: 5 }, () => [SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]])); const [isSpinning, setIsSpinning] = React.useState(false); const [winAmount, setWinAmount] = React.useState(0); const [isAuto, setIsAuto] = React.useState(false); const [showBigWin, setShowBigWin] = React.useState(false); const [bet, setBet] = React.useState(200); const autoRef = React.useRef(isAuto); React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]); const getRandomSymbol = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; const getRandomReel = () => [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()]; const spin = async () => { if (balance < bet) { setIsAuto(false); return setWinMessage("Saldo Kurang!"); } setShowBigWin(false); const currentBalance = balance - bet; updateBalance(currentBalance); setIsSpinning(true); setWinAmount(0); setWinMessage("Spinning..."); const interval = setInterval(() => { setGrid(Array.from({ length: 5 }, () => getRandomReel())); }, 100); await new Promise(r => setTimeout(r, 2000)); clearInterval(interval); const finalGrid = Array.from({ length: 5 }, () => getRandomReel()); setGrid(finalGrid); const midRow = finalGrid.map(col => col[1]); let winMultiplier = 0; if (midRow.every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 100; else if (midRow.slice(0,4).every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 20; else if (midRow.slice(0,3).every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 5; const winTotal = winMultiplier * (bet / 100); if (winTotal >= bet * 20) { setShowBigWin(true); setWinMessage("SENSATIONAL!!!"); if(navigator.vibrate) navigator.vibrate(500); } else if (winTotal > 0) { setWinMessage(`Win +${winTotal.toLocaleString()}`); } else { setWinMessage("Zonk. Coba Lagi."); } if (winTotal > 0) updateBalance(currentBalance + winTotal, true); setWinAmount(winTotal); setIsSpinning(false); }; React.useEffect(() => { if (isAuto && !isSpinning) { const timer = setTimeout(() => { spin(); }, 500); return () => clearTimeout(timer); } }, [isAuto, isSpinning, balance]); return (<div className={`relative w-full max-w-2xl mx-auto ${showBigWin ? 'shake-screen' : ''}`}>{showBigWin && (<div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 rounded-3xl big-win-overlay pointer-events-none"><h1 className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,1)] font-cyber mb-2">BIG WIN</h1><div className="text-4xl font-bold text-white animate-bounce">+{winAmount.toLocaleString()}</div><div className="absolute top-0 left-10 coin" style={{animationDelay:'0s'}}></div><div className="absolute top-0 right-20 coin" style={{animationDelay:'0.5s'}}></div><div className="absolute top-0 left-1/2 coin" style={{animationDelay:'1s'}}></div></div>)}<div className="bg-gradient-to-b from-yellow-600 via-purple-900 to-black p-1.5 rounded-3xl shadow-[0_0_50px_rgba(234,179,8,0.4)]"><div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden"><div className="grid grid-cols-5 gap-2 mb-6 bg-slate-800 p-2 rounded border border-slate-700 relative" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}><div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-600 z-10 shadow-[0_0_5px_rgba(239,68,68,0.8)] pointer-events-none"></div>{grid.map((reel, i) => (<div key={i} className="flex flex-col gap-1 overflow-hidden h-[240px] bg-slate-900 rounded border border-slate-700">{reel.map((s, j) => (<div key={j} className={`h-[80px] flex items-center justify-center text-4xl bg-gradient-to-b from-slate-800 to-slate-950 border-b border-slate-800 ${isSpinning ? 'blur-[2px]' : ''}`}><span className={`filter drop-shadow-md ${s.color}`}>{s.icon}</span></div>))}</div>))}</div><BetControl bet={bet} setBet={setBet} balance={balance} /><div className="flex gap-3"><button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto?'STOP':'AUTO'}</button><button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto || balance < bet} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-yellow-500 to-orange-600 text-black shadow-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-xl tracking-widest">SPIN</button></div></div></div></div>); }
-        // Game 2: Neon Wheel
-        function GameWheel({ balance, updateBalance, setWinMessage }) { const [rotation, setRotation] = React.useState(0); const [isSpinning, setIsSpinning] = React.useState(false); const [bet, setBet] = React.useState(500); const segments = [{ val: 0, color: '#ef4444', label: 'ZONK' }, { val: 2, color: '#3b82f6', label: 'x2' }, { val: 0, color: '#ef4444', label: 'ZONK' }, { val: 5, color: '#22c55e', label: 'x5' }, { val: 0, color: '#ef4444', label: 'ZONK' }, { val: 10, color: '#eab308', label: 'x10' }, { val: 0, color: '#ef4444', label: 'ZONK' }, { val: 0.5, color: '#a855f7', label: 'x0.5' }]; const spin = async () => { if (balance < bet) return setWinMessage("Saldo Kurang!"); updateBalance(balance - bet); setIsSpinning(true); setWinMessage("Putar..."); const spins = 5; const randomIndex = Math.floor(Math.random() * segments.length); const segmentAngle = 360 / segments.length; const targetRotation = (spins * 360) + (360 - (randomIndex * segmentAngle)); const randomOffset = (Math.random() - 0.5) * 30; const finalRot = rotation + targetRotation + randomOffset; setRotation(finalRot); setTimeout(() => { const winSeg = segments[randomIndex]; const win = bet * winSeg.val; updateBalance(balance - bet + win, true); if(win > 0) setWinMessage(`Dapat ${winSeg.label} (+${win.toLocaleString()})`); else setWinMessage("Zonk! Coba lagi."); setIsSpinning(false); }, 5000); }; return (<div className="flex flex-col items-center w-full max-w-md"><div className="relative w-72 h-72 mb-8"><div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30 text-yellow-400 filter drop-shadow-lg"><Icons.MapPin className="w-12 h-12 transform rotate-180 fill-current" /></div><div className="w-full h-full rounded-full border-8 border-slate-800 relative overflow-hidden wheel-container shadow-[0_0_30px_rgba(0,0,0,0.5)]" style={{ transform: `rotate(${rotation}deg)`, background: `conic-gradient(#ef4444 0% 12.5%, #3b82f6 12.5% 25%, #ef4444 25% 37.5%, #22c55e 37.5% 50%, #ef4444 50% 62.5%, #eab308 62.5% 75%, #ef4444 75% 87.5%, #a855f7 87.5% 100%)` }}>{segments.map((seg, i) => (<div key={i} className="absolute w-full h-full top-0 left-0" style={{ transform: `rotate(${i * 45 + 22.5}deg)` }}> <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center font-bold font-cyber text-white drop-shadow-md text-sm">{seg.label}</div></div>))}<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 rounded-full border-4 border-yellow-500 shadow-lg flex items-center justify-center z-20"><span className="font-cyber text-yellow-500 font-bold">SPIN</span></div></div></div><BetControl bet={bet} setBet={setBet} balance={balance} /><button onClick={spin} disabled={isSpinning || balance < bet} className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl font-black font-cyber text-white shadow-lg hover:scale-105 transition disabled:opacity-50 disabled:hover:scale-100">PUTAR</button></div>); }
-        // Game 3: Code Breaker (High/Low)
-        function GameHighLow({ balance, updateBalance, setWinMessage }) { const [currentNum, setCurrentNum] = React.useState(Math.floor(Math.random()*13)+1); const [nextNum, setNextNum] = React.useState(null); const [status, setStatus] = React.useState('Tebak Angka Berikutnya'); const [isFlipped, setIsFlipped] = React.useState(false); const [isLoading, setIsLoading] = React.useState(false); const [resultClass, setResultClass] = React.useState(''); const [bet, setBet] = React.useState(200); const guess = (isHigher) => { if (balance < bet) return setWinMessage("Saldo Kurang!"); if (isLoading) return; updateBalance(balance - bet); setIsLoading(true); setStatus('Menganalisis...'); setWinMessage('...'); setResultClass(''); const next = Math.floor(Math.random()*13)+1; setNextNum(next); setTimeout(() => { setIsFlipped(true); setTimeout(() => { let win = false; if (isHigher && next > currentNum) win = true; if (!isHigher && next < currentNum) win = true; if (win) { const winAmount = bet * 2; updateBalance(balance - bet + winAmount, true); setStatus('BENAR!'); setWinMessage(`Win +${winAmount.toLocaleString()}`); setResultClass('win'); } else { setStatus('SALAH!'); setWinMessage(`Kalah -${bet.toLocaleString()}`); setResultClass('lose'); } setTimeout(() => { setIsFlipped(false); setTimeout(() => { setCurrentNum(next); setNextNum(null); setStatus('Tebak Angka Berikutnya'); setResultClass(''); setIsLoading(false); }, 800); }, 2000); }, 600); }, 500); }; return (<div className="text-center p-8 bg-slate-900/80 rounded-3xl border border-blue-500/30 max-w-md mx-auto shadow-[0_0_30px_rgba(59,130,246,0.2)]"><h3 className="text-blue-400 font-cyber text-2xl mb-6 tracking-wider">DECRYPT_CODE</h3><div className="flex justify-center items-center gap-8 mb-8 h-48"><div className="w-32 h-48 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl border-2 border-slate-600 flex items-center justify-center shadow-lg"><span className="text-6xl font-bold font-cyber text-white">{currentNum}</span></div><div className={`w-32 h-48 highlow-card relative ${isFlipped ? 'flipped' : ''}`}><div className="highlow-card-inner"><div className="highlow-card-front flex flex-col items-center justify-center"><Icons.Lock className="w-12 h-12 text-slate-500 mb-2" /><span className="text-sm text-slate-400 font-cyber">UNKNOWN</span></div><div className={`highlow-card-back ${resultClass}`}>{nextNum}</div></div></div></div><p className="text-slate-300 mb-6 h-6 font-bold">{status}</p><BetControl bet={bet} setBet={setBet} balance={balance} /><div className="flex gap-4 justify-center"><button onClick={() => guess(false)} disabled={isLoading || balance < bet} className="flex-1 py-4 bg-red-600/80 rounded-xl font-bold font-cyber hover:bg-red-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-red-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.ArrowDown/> LEBIH KECIL</button><button onClick={() => guess(true)} disabled={isLoading || balance < bet} className="flex-1 py-4 bg-green-600/80 rounded-xl font-bold font-cyber hover:bg-green-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-green-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.TrendingUp/> LEBIH BESAR</button></div><p className="mt-6 text-xs text-slate-400 font-cyber">Hadiah: 2x Lipat Modal</p></div>); }
+        function ImageCropper({ imageSrc, onCancel, onCrop }) {
+            const [zoom, setZoom] = React.useState(1);
+            const [minZoom, setMinZoom] = React.useState(0.1);
+            const [position, setPosition] = React.useState({ x: 0, y: 0 });
+            const [dragging, setDragging] = React.useState(false);
+            const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
+            const imgRef = React.useRef(null);
+            const CONTAINER_SIZE = 280; 
 
-        // Game 4: Cosmic Dice (New)
+            React.useEffect(() => {
+                const img = new Image();
+                img.src = imageSrc;
+                img.onload = () => {
+                    const widthRatio = CONTAINER_SIZE / img.naturalWidth;
+                    const heightRatio = CONTAINER_SIZE / img.naturalHeight;
+                    const fitZoom = Math.max(widthRatio, heightRatio);
+                    setZoom(fitZoom);
+                    setMinZoom(fitZoom * 0.5); 
+                };
+            }, [imageSrc]);
+
+            const handleMouseDown = (e) => { setDragging(true); setLastPos({ x: e.clientX, y: e.clientY }); };
+            const handleMouseMove = (e) => { if (!dragging) return; const dx = e.clientX - lastPos.x; const dy = e.clientY - lastPos.y; setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy })); setLastPos({ x: e.clientX, y: e.clientY }); };
+            const handleMouseUp = () => setDragging(false);
+            
+            const handleSave = () => {
+                const canvas = document.createElement('canvas');
+                const size = 300; 
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+                
+                if(imgRef.current) {
+                    const scaleFactor = size / CONTAINER_SIZE;
+                    const imgWidth = imgRef.current.naturalWidth * zoom * scaleFactor;
+                    const imgHeight = imgRef.current.naturalHeight * zoom * scaleFactor;
+                    
+                    const drawX = (size - imgWidth) / 2 + (position.x * scaleFactor);
+                    const drawY = (size - imgHeight) / 2 + (position.y * scaleFactor);
+
+                    ctx.save(); ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(imgRef.current, drawX, drawY, imgWidth, imgHeight); ctx.restore();
+                }
+                onCrop(canvas.toDataURL('image/jpeg', 0.7));
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
+                    <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-white/10 shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-4 text-center">Sesuaikan Foto</h3>
+                        <div className="flex justify-center mb-6 select-none">
+                            <div className="crop-wrapper">
+                                <div className="crop-overlay"></div>
+                                <div className="drag-area" onMouseDown={handleMouseDown} onTouchStart={(e)=>{setDragging(true); setLastPos({x:e.touches[0].clientX, y:e.touches[0].clientY})}}>
+                                    <img ref={imgRef} src={imageSrc} className="absolute max-w-none pointer-events-none transition-transform duration-75" style={{ transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${zoom})`, left: '50%', top: '50%' }}/>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mb-6 px-4"><input type="range" min={minZoom} max={minZoom * 5} step={minZoom / 20} value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb"/></div>
+                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-slate-700 text-white font-bold flex justify-center gap-2 hover:bg-slate-600"><Icons.X/> Batal</button><button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold flex justify-center gap-2 hover:bg-yellow-400"><Icons.Check/> Simpan</button></div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AuthPage() {
+            const [isRegister, setIsRegister] = React.useState(false);
+            const [email, setEmail] = React.useState('');
+            const [fullName, setFullName] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [loading, setLoading] = React.useState(false);
+            const [errorMsg, setErrorMsg] = React.useState('');
+            const [successMsg, setSuccessMsg] = React.useState('');
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setLoading(true); setErrorMsg(''); setSuccessMsg('');
+                const cleanEmail = email.trim();
+                try {
+                    if (isRegister) {
+                        if (!fullName) throw new Error("Nama Lengkap wajib diisi!");
+                        const { error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { data: { full_name: fullName } } });
+                        if (error) throw error;
+                        setSuccessMsg("Daftar Berhasil! Silakan Login.");
+                    } else {
+                        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+                        if (error) throw error;
+                    }
+                } catch (error) {
+                    let msg = error.message;
+                    if (msg.includes("fetch")) { localStorage.setItem('sb-session', JSON.stringify({ user: { id: 'local_'+cleanEmail, email: cleanEmail, user_metadata: { full_name: fullName || 'Guest' } } })); window.location.reload(); return; }
+                    if (msg.includes("Invalid login")) msg = "Email/Password salah.";
+                    setErrorMsg(msg);
+                } finally { setLoading(false); }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] relative">
+                    <div className="absolute inset-0 pointer-events-none"><div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 to-blue-900/20"></div></div>
+                    <div className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative z-10">
+                        <div className="text-center mb-6"><h1 className="text-3xl font-bold text-yellow-500 font-cyber tracking-widest">ROYAL CYBER</h1></div>
+                        <div className="flex border-b border-white/10 mb-6">
+                            <button onClick={() => setIsRegister(false)} className={`flex-1 py-3 text-sm font-bold ${!isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>MASUK</button>
+                            <button onClick={() => setIsRegister(true)} className={`flex-1 py-3 text-sm font-bold ${isRegister ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-slate-500'}`}>DAFTAR</button>
+                        </div>
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            {errorMsg && <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded text-sm">{errorMsg}</div>}
+                            {successMsg && <div className="bg-green-500/20 text-green-200 px-4 py-2 rounded text-sm">{successMsg}</div>}
+                            
+                            {isRegister && (
+                                <div className="relative group animate-fade-in">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.User /></div>
+                                    <input type="text" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Nama Lengkap" value={fullName} onChange={(e)=>setFullName(e.target.value)}/>
+                                </div>
+                            )}
+
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+                                <input type="email" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Icons.Lock /></div>
+                                <input type="password" required className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 text-white focus:border-yellow-500 outline-none" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+                            </div>
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold rounded-xl font-cyber glow-btn mt-4">
+                                {loading ? 'LOADING...' : (isRegister ? 'DAFTAR' : 'MASUK')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function GameAds() {
+            const ads = [
+                "https://picsum.photos/seed/ad1/400/150",
+                "https://picsum.photos/seed/ad2/400/150",
+                "https://picsum.photos/seed/ad3/400/150"
+            ];
+            const [currentAd, setCurrentAd] = React.useState(0);
+
+            React.useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentAd((prev) => (prev + 1) % ads.length);
+                }, 5000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="mt-6 w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-lg border border-white/10 relative h-24 sm:h-32 bg-slate-800">
+                    {ads.map((ad, index) => (
+                        <img 
+                            key={index} 
+                            src={ad} 
+                            alt={`Iklan ${index + 1}`} 
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentAd ? 'opacity-100' : 'opacity-0'}`} 
+                        />
+                    ))}
+                    <div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">IKLAN</div>
+                </div>
+            );
+        }
+
+        function GameSlots({ balance, updateBalance, setWinMessage }) {
+            const SYMBOLS = [
+                {id:'Z', icon:'⚡', val:100, color:'text-yellow-400'}, 
+                {id:'7', icon:'7️⃣', val:50, color:'text-red-500'},
+                {id:'D', icon:'💎', val:20, color:'text-cyan-400'},
+                {id:'K', icon:'👑', val:10, color:'text-purple-400'},
+                {id:'C', icon:'🍒', val:5, color:'text-pink-500'}
+            ];
+            
+            const [grid, setGrid] = React.useState(() => Array.from({ length: 5 }, () => [SYMBOLS[0], SYMBOLS[0], SYMBOLS[0]]));
+            const [isSpinning, setIsSpinning] = React.useState(false);
+            const [winAmount, setWinAmount] = React.useState(0);
+            const [isAuto, setIsAuto] = React.useState(false);
+            const [showBigWin, setShowBigWin] = React.useState(false);
+            const [bet, setBet] = React.useState(200);
+
+            const autoRef = React.useRef(isAuto);
+            
+            React.useEffect(() => { autoRef.current = isAuto; }, [isAuto]);
+
+            const getRandomSymbol = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+            const getRandomReel = () => [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+
+            const spin = async () => {
+                if (balance < bet) { setIsAuto(false); return setWinMessage("Saldo Kurang!"); }
+                setShowBigWin(false); 
+                
+                const currentBalance = balance - bet;
+                updateBalance(currentBalance);
+                
+                setIsSpinning(true); 
+                setWinAmount(0); 
+                setWinMessage("Spinning...");
+                
+                const interval = setInterval(() => {
+                    setGrid(Array.from({ length: 5 }, () => getRandomReel()));
+                }, 100);
+
+                await new Promise(r => setTimeout(r, 2000));
+                clearInterval(interval);
+                
+                const finalGrid = Array.from({ length: 5 }, () => getRandomReel());
+                setGrid(finalGrid);
+                
+                const midRow = finalGrid.map(col => col[1]);
+                let winMultiplier = 0;
+                
+                if (midRow.every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 100;
+                else if (midRow.slice(0,4).every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 20;
+                else if (midRow.slice(0,3).every(s => s.id === midRow[0].id)) winMultiplier = midRow[0].val * 5;
+
+                const winTotal = winMultiplier * (bet / 100); 
+
+                if (winTotal >= bet * 20) {
+                    setShowBigWin(true);
+                    setWinMessage("SENSATIONAL!!!");
+                    if(navigator.vibrate) navigator.vibrate(500);
+                } else if (winTotal > 0) {
+                    setWinMessage(`Win +${winTotal.toLocaleString()}`);
+                } else {
+                    setWinMessage("Zonk. Coba Lagi.");
+                }
+
+                if (winTotal > 0) updateBalance(currentBalance + winTotal, true);
+                setWinAmount(winTotal);
+                
+                setIsSpinning(false);
+            };
+
+            React.useEffect(() => {
+                if (isAuto && !isSpinning) {
+                    const timer = setTimeout(() => {
+                        spin();
+                    }, 500); 
+                    return () => clearTimeout(timer);
+                }
+            }, [isAuto, isSpinning, balance]);
+
+            return (
+                <div className={`relative w-full max-w-2xl mx-auto ${showBigWin ? 'shake-screen' : ''}`}>
+                    {showBigWin && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 rounded-3xl big-win-overlay pointer-events-none">
+                            <h1 className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,1)] font-cyber mb-2">BIG WIN</h1>
+                            <div className="text-4xl font-bold text-white animate-bounce">+{winAmount.toLocaleString()}</div>
+                            <div className="absolute top-0 left-10 coin" style={{animationDelay:'0s'}}></div>
+                            <div className="absolute top-0 right-20 coin" style={{animationDelay:'0.5s'}}></div>
+                            <div className="absolute top-0 left-1/2 coin" style={{animationDelay:'1s'}}></div>
+                        </div>
+                    )}
+
+                    <div className="bg-gradient-to-b from-yellow-600 via-purple-900 to-black p-1.5 rounded-3xl shadow-[0_0_50px_rgba(234,179,8,0.4)]">
+                        <div className="bg-slate-900 rounded-[20px] p-4 border-4 border-yellow-500/50 relative overflow-hidden">
+                            
+                            <div 
+                                className="grid grid-cols-5 gap-2 mb-6 bg-slate-800 p-2 rounded border border-slate-700 relative"
+                                style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}
+                            >
+                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-600 z-10 shadow-[0_0_5px_rgba(239,68,68,0.8)] pointer-events-none"></div>
+                                {grid.map((reel, i) => (
+                                    <div key={i} className="flex flex-col gap-1 overflow-hidden h-[240px] bg-slate-900 rounded border border-slate-700">
+                                        {reel.map((s, j) => (
+                                            <div key={j} className={`h-[80px] flex items-center justify-center text-4xl bg-gradient-to-b from-slate-800 to-slate-950 border-b border-slate-800 ${isSpinning ? 'blur-[2px]' : ''}`}>
+                                                <span className={`filter drop-shadow-md ${s.color}`}>{s.icon}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <BetControl bet={bet} setBet={setBet} balance={balance} />
+
+                            <div className="flex gap-3">
+                                <button onClick={() => setIsAuto(!isAuto)} className={`flex-1 py-4 rounded-xl font-bold font-cyber ${isAuto?'bg-red-600 animate-pulse':'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{isAuto?'STOP':'AUTO'}</button>
+                                <button onClick={() => {if(!isAuto) spin()}} disabled={isSpinning || isAuto || balance < bet} className="flex-[2] py-4 rounded-xl font-black font-cyber bg-gradient-to-r from-yellow-500 to-orange-600 text-black shadow-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-xl tracking-widest">SPIN</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function GameWheel({ balance, updateBalance, setWinMessage }) {
+            const [rotation, setRotation] = React.useState(0);
+            const [isSpinning, setIsSpinning] = React.useState(false);
+            const [bet, setBet] = React.useState(500);
+
+            const segments = [
+                { val: 0, color: '#ef4444', label: 'ZONK' },
+                { val: 2, color: '#3b82f6', label: 'x2' },
+                { val: 0, color: '#ef4444', label: 'ZONK' },
+                { val: 5, color: '#22c55e', label: 'x5' },
+                { val: 0, color: '#ef4444', label: 'ZONK' },
+                { val: 10, color: '#eab308', label: 'x10' },
+                { val: 0, color: '#ef4444', label: 'ZONK' },
+                { val: 0.5, color: '#a855f7', label: 'x0.5' }
+            ];
+
+            const spin = async () => {
+                if (balance < bet) return setWinMessage("Saldo Kurang!");
+                updateBalance(balance - bet);
+                setIsSpinning(true); setWinMessage("Putar...");
+
+                const spins = 5; 
+                const randomIndex = Math.floor(Math.random() * segments.length);
+                const segmentAngle = 360 / segments.length;
+                
+                const targetRotation = (spins * 360) + (360 - (randomIndex * segmentAngle));
+                const randomOffset = (Math.random() - 0.5) * 30; 
+                
+                const finalRot = rotation + targetRotation + randomOffset;
+                setRotation(finalRot);
+
+                setTimeout(() => {
+                    const winSeg = segments[randomIndex];
+                    const win = bet * winSeg.val;
+                    updateBalance(balance - bet + win, true);
+                    if(win > 0) setWinMessage(`Dapat ${winSeg.label} (+${win.toLocaleString()})`); else setWinMessage("Zonk! Coba lagi.");
+                    setIsSpinning(false);
+                }, 5000);
+            };
+
+            return (
+                <div className="flex flex-col items-center w-full max-w-md">
+                    <div className="relative w-72 h-72 mb-8">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-30 text-yellow-400 filter drop-shadow-lg">
+                            <Icons.MapPin className="w-12 h-12 transform rotate-180 fill-current" />
+                        </div>
+                        
+                        <div className="w-full h-full rounded-full border-8 border-slate-800 relative overflow-hidden wheel-container shadow-[0_0_30px_rgba(0,0,0,0.5)]" style={{ transform: `rotate(${rotation}deg)`, background: `conic-gradient(#ef4444 0% 12.5%, #3b82f6 12.5% 25%, #ef4444 25% 37.5%, #22c55e 37.5% 50%, #ef4444 50% 62.5%, #eab308 62.5% 75%, #ef4444 75% 87.5%, #a855f7 87.5% 100%)` }}>
+                            {segments.map((seg, i) => (
+                                <div key={i} className="absolute w-full h-full top-0 left-0" style={{ transform: `rotate(${i * 45 + 22.5}deg)` }}> 
+                                    <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center font-bold font-cyber text-white drop-shadow-md text-sm">{seg.label}</div>
+                                </div>
+                            ))}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 rounded-full border-4 border-yellow-500 shadow-lg flex items-center justify-center z-20">
+                                <span className="font-cyber text-yellow-500 font-bold">SPIN</span>
+                            </div>
+                        </div>
+                    </div>
+                    <BetControl bet={bet} setBet={setBet} balance={balance} />
+                    <button onClick={spin} disabled={isSpinning || balance < bet} className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl font-black font-cyber text-white shadow-lg hover:scale-105 transition disabled:opacity-50 disabled:hover:scale-100">PUTAR</button>
+                </div>
+            );
+        }
+
+        function GameHighLow({ balance, updateBalance, setWinMessage }) {
+            const [currentNum, setCurrentNum] = React.useState(Math.floor(Math.random()*13)+1);
+            const [nextNum, setNextNum] = React.useState(null);
+            const [status, setStatus] = React.useState('Tebak Angka Berikutnya');
+            const [isFlipped, setIsFlipped] = React.useState(false);
+            const [isLoading, setIsLoading] = React.useState(false);
+            const [resultClass, setResultClass] = React.useState('');
+            const [bet, setBet] = React.useState(200); 
+
+            const guess = (isHigher) => {
+                if (balance < bet) return setWinMessage("Saldo Kurang!");
+                if (isLoading) return;
+                
+                updateBalance(balance - bet);
+                setIsLoading(true);
+                setStatus('Menganalisis...');
+                setWinMessage('...');
+                setResultClass('');
+
+                const next = Math.floor(Math.random()*13)+1;
+                setNextNum(next);
+
+                setTimeout(() => {
+                    setIsFlipped(true);
+                    setTimeout(() => {
+                        let win = false;
+                        if (isHigher && next > currentNum) win = true;
+                        if (!isHigher && next < currentNum) win = true;
+
+                        if (win) { 
+                            const winAmount = bet * 2; 
+                            updateBalance(balance - bet + winAmount, true); 
+                            setStatus('BENAR!'); 
+                            setWinMessage(`Win +${winAmount.toLocaleString()}`);
+                            setResultClass('win'); 
+                        } else { 
+                            setStatus('SALAH!'); 
+                            setWinMessage(`Kalah -${bet.toLocaleString()}`);
+                            setResultClass('lose'); 
+                        }
+
+                        setTimeout(() => {
+                            setIsFlipped(false);
+                            setTimeout(() => {
+                                setCurrentNum(next);
+                                setNextNum(null);
+                                setStatus('Tebak Angka Berikutnya');
+                                setResultClass('');
+                                setIsLoading(false);
+                            }, 800); 
+                        }, 2000);
+                    }, 600);
+                }, 500);
+            };
+
+            return (
+                <div className="text-center p-8 bg-slate-900/80 rounded-3xl border border-blue-500/30 max-w-md mx-auto shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                    <h3 className="text-blue-400 font-cyber text-2xl mb-6 tracking-wider">DECRYPT_CODE</h3>
+                    
+                    <div className="flex justify-center items-center gap-8 mb-8 h-48">
+                        <div className="w-32 h-48 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl border-2 border-slate-600 flex items-center justify-center shadow-lg">
+                            <span className="text-6xl font-bold font-cyber text-white">{currentNum}</span>
+                        </div>
+                        
+                        <div className={`w-32 h-48 highlow-card relative ${isFlipped ? 'flipped' : ''}`}>
+                            <div className="highlow-card-inner">
+                                <div className="highlow-card-front flex flex-col items-center justify-center">
+                                    <Icons.Lock className="w-12 h-12 text-slate-500 mb-2" />
+                                    <span className="text-sm text-slate-400 font-cyber">UNKNOWN</span>
+                                </div>
+                                <div className={`highlow-card-back ${resultClass}`}>{nextNum}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-slate-300 mb-6 h-6 font-bold">{status}</p>
+                    
+                    <BetControl bet={bet} setBet={setBet} balance={balance} />
+
+                    <div className="flex gap-4 justify-center">
+                        <button onClick={() => guess(false)} disabled={isLoading || balance < bet} className="flex-1 py-4 bg-red-600/80 rounded-xl font-bold font-cyber hover:bg-red-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-red-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.ArrowDown/> LEBIH KECIL</button>
+                        <button onClick={() => guess(true)} disabled={isLoading || balance < bet} className="flex-1 py-4 bg-green-600/80 rounded-xl font-bold font-cyber hover:bg-green-500 transition disabled:opacity-50 flex items-center justify-center gap-2 border-b-4 border-green-800 active:border-b-0 active:translate-y-1 disabled:cursor-not-allowed"><Icons.TrendingUp/> LEBIH BESAR</button>
+                    </div>
+                    <p className="mt-6 text-xs text-slate-400 font-cyber">Hadiah: 2x Lipat Modal</p>
+                </div>
+            );
+        }
+
         function GameDice({ balance, updateBalance, setWinMessage }) {
             const [dice, setDice] = React.useState([1, 1]);
             const [isRolling, setIsRolling] = React.useState(false);
             const [bet, setBet] = React.useState(200);
-            const [prediction, setPrediction] = React.useState(null); // 'low' (2-6), 'seven' (7), 'high' (8-12)
+            const [prediction, setPrediction] = React.useState(null); 
 
             const roll = async (pred) => {
                 if (balance < bet) return setWinMessage("Saldo Kurang!");
@@ -245,7 +665,6 @@
             );
         }
 
-        // Game 5: Rocket Crash (New - Simplified)
         function GameRocket({ balance, updateBalance, setWinMessage }) {
             const [multiplier, setMultiplier] = React.useState(1.00);
             const [isFlying, setIsFlying] = React.useState(false);
@@ -258,7 +677,7 @@
                 updateBalance(balance - bet);
                 setIsFlying(true); setCrashed(false); setCashedOut(false); setMultiplier(1.00); setWinMessage("Roket Meluncur!");
                 
-                const crashPoint = 1 + Math.random() * 5; // Crash between 1x and 6x
+                const crashPoint = 1 + Math.random() * 5; 
                 let currentMult = 1.00;
                 
                 const interval = setInterval(() => {
@@ -272,7 +691,6 @@
                     }
                 }, 100);
                 
-                // Cleanup if unmounted
                 return () => clearInterval(interval);
             };
 
@@ -283,9 +701,6 @@
                 setCashedOut(true);
                 setWinMessage(`Cashout! +${win.toLocaleString()}`);
             };
-
-            // Note: useRef for interval handling would be cleaner but sticking to simple state for this demo
-            // This simplified version might have issues if spamming, but works for concept.
 
             return (
                 <div className="text-center p-8 bg-slate-900/80 rounded-3xl border border-orange-500/30 max-w-md mx-auto shadow-[0_0_30px_rgba(249,115,22,0.2)]">
@@ -309,7 +724,6 @@
             );
         }
 
-        // --- SEARCH USER PAGE ---
         function SearchUserPage({ session }) {
             const [query, setQuery] = React.useState('');
             const [results, setResults] = React.useState([]);
@@ -319,7 +733,6 @@
                 e.preventDefault();
                 if (!query) return;
                 setLoading(true);
-                // Search by name or email (partial match)
                 const { data, error } = await supabase.from('players')
                     .select('full_name, avatar_url, title, avatar_border')
                     .ilike('full_name', `%${query}%`)
@@ -365,7 +778,6 @@
             );
         }
 
-        // --- SUB PAGES ---
         function Lobby({ setGame }) {
             const games = [
                 { id: 'slot', name: 'Cyber Slots', icon: Icons.Play, color: 'from-yellow-600 to-red-600', desc: 'Classic Slot' },
@@ -431,17 +843,30 @@
                         <p className="text-slate-400 text-sm">v13.0.0 - The Future of Digital Entertainment</p>
                     </div>
 
-                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
-                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-4 mb-4">Tentang Kami</h3>
+                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10 space-y-4">
+                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">Tentang Kami</h3>
                         <p className="text-slate-300 text-sm leading-relaxed mb-4">
                             Royal Cyber Casino menghadirkan pengalaman kasino futuristik di genggaman Anda. 
                             Kami berkomitmen menyediakan hiburan berkualitas tinggi tanpa risiko finansial nyata.
                         </p>
-                        <div className="grid grid-cols-2 gap-4 text-center">
-                            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700"><div className="text-2xl mb-1">🎮</div><div className="text-xs text-slate-400">5+ Games</div></div>
-                            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700"><div className="text-2xl mb-1">🔒</div><div className="text-xs text-slate-400">Secure Data</div></div>
-                            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700"><div className="text-2xl mb-1">🌍</div><div className="text-xs text-slate-400">Global Chat</div></div>
-                            <div className="bg-slate-900 p-3 rounded-lg border border-slate-700"><div className="text-2xl mb-1">🏆</div><div className="text-xs text-slate-400">Rank System</div></div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-slate-800/50 p-6 rounded-xl border border-blue-500/30">
+                            <h3 className="text-lg font-bold text-blue-400 mb-3">Visi Kami</h3>
+                            <ul className="space-y-2 text-sm text-slate-300 list-disc pl-4">
+                                <li>Menjadi platform simulasi #1 di Asia.</li>
+                                <li>Menciptakan komunitas gamer yang solid.</li>
+                                <li>Inovasi teknologi web realtime tercepat.</li>
+                            </ul>
+                        </div>
+                        <div className="bg-slate-800/50 p-6 rounded-xl border border-green-500/30">
+                            <h3 className="text-lg font-bold text-green-400 mb-3">Keamanan & Fair Play</h3>
+                            <ul className="space-y-2 text-sm text-slate-300 list-disc pl-4">
+                                <li>Enkripsi data SSL 256-bit.</li>
+                                <li>Sistem anti-bot & anti-cheat canggih.</li>
+                                <li>Transparansi riwayat transaksi penuh.</li>
+                            </ul>
                         </div>
                     </div>
 
@@ -461,16 +886,14 @@
             );
         }
 
-        // --- LIVE RTP PATTERN PAGE ---
         function PatternPage() {
-            // Simulasi data RTP live
             const [time, setTime] = React.useState(new Date());
             React.useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
             const games = [
                 { name: "Cyber Slots", rtp: 80 + Math.floor(Math.random() * 15), volatility: "High" },
                 { name: "Neon Wheel", rtp: 90 + Math.floor(Math.random() * 8), volatility: "Med" },
-                { name: "Code Breaker", rtp: 50, volatility: "Low" }, // Fixed probability
+                { name: "Code Breaker", rtp: 50, volatility: "Low" },
                 { name: "Cosmic Dice", rtp: 95, volatility: "Med" },
                 { name: "Rocket Crash", rtp: 98, volatility: "Extreme" },
             ];
@@ -491,19 +914,9 @@
                                     <div className="text-2xl font-bold text-green-400">{g.rtp}%</div>
                                     <div className="text-[10px] text-slate-500">Win Rate</div>
                                 </div>
-                                {/* Progress bar background */}
                                 <div className="absolute bottom-0 left-0 h-1 bg-green-600 transition-all duration-1000" style={{ width: `${g.rtp}%` }}></div>
                             </div>
                         ))}
-                    </div>
-
-                    <div className="mt-8 bg-slate-800/50 p-4 rounded-lg border border-yellow-500/20">
-                        <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2"><Icons.Zap/> Bocoran Admin</h3>
-                        <ul className="text-sm text-slate-300 space-y-2 list-disc pl-4">
-                            <li><strong>Cyber Slots:</strong> Spin Auto 20x, lalu Manual 5x. Jam hoki: 02:00 - 05:00.</li>
-                            <li><strong>Rocket:</strong> Cashout di 1.5x - 2.0x untuk profit konsisten. Jangan serakah!</li>
-                            <li><strong>Wheel:</strong> Bet kecil di angka besar (x10) sering kali tembus di menit ganjil.</li>
-                        </ul>
                     </div>
                 </div>
             );
@@ -522,11 +935,9 @@
             ];
 
             React.useEffect(() => {
-                // Safer inventory check
                 if (profileData && Array.isArray(profileData.inventory)) {
                     setOwnedItems(profileData.inventory);
-                } else if (profileData) {
-                    // Fallback if not array
+                } else {
                     setOwnedItems(['default']);
                 }
             }, [profileData]);
@@ -592,31 +1003,322 @@
             );
         }
 
-        // [ProfilePage, TopUpPage, FeedbackPage, InboxPage, AdminRequestsPage - SAME AS V10/11]
-        function ProfilePage({session,profileData,refreshProfile}){ const [email, setEmail] = React.useState(session.user.email); const [password, setPassword] = React.useState(''); const [fullName, setFullName] = React.useState(profileData?.full_name || ''); const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || ''); const [msg, setMsg] = React.useState(''); const [isCropping, setIsCropping] = React.useState(false); const [tempImg, setTempImg] = React.useState(null); const [showPasswordUI, setShowPasswordUI] = React.useState(false); const [oldPassword, setOldPassword] = React.useState(''); const [newPassword, setNewPassword] = React.useState(''); const [confirmPassword, setConfirmPassword] = React.useState(''); const fileRef = React.useRef(null);
+        function ProfilePage({session,profileData,refreshProfile}){
+            const [email, setEmail] = React.useState(session.user.email); const [password, setPassword] = React.useState(''); const [fullName, setFullName] = React.useState(profileData?.full_name || ''); const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || ''); const [msg, setMsg] = React.useState(''); const [isCropping, setIsCropping] = React.useState(false); const [tempImg, setTempImg] = React.useState(null); const [showPasswordUI, setShowPasswordUI] = React.useState(false); const [oldPassword, setOldPassword] = React.useState(''); const [newPassword, setNewPassword] = React.useState(''); const [confirmPassword, setConfirmPassword] = React.useState(''); const fileRef = React.useRef(null);
             const handleImageChange = (e) => { if(e.target.files[0]){ if (e.target.files[0].size > 5 * 1024 * 1024) return alert("Maks 5MB"); const r = new FileReader(); r.onload = () => { setTempImg(r.result); setIsCropping(true); }; r.readAsDataURL(e.target.files[0]); } e.target.value = null; };
             const handleUpdate = async (e) => { e.preventDefault(); setMsg('Menyimpan...'); const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id); if (dbError) { setMsg("Gagal update profil."); return; } if (showPasswordUI) { if (!oldPassword || !newPassword || !confirmPassword) { setMsg("Isi semua kolom password."); return; } if (newPassword !== confirmPassword) { setMsg("Konfirmasi password tidak cocok."); return; } if (newPassword.length < 6) { setMsg("Password minimal 6 karakter."); return; } const { error: verifyError } = await supabase.auth.signInWithPassword({ email: session.user.email, password: oldPassword }); if (verifyError) { setMsg("Password lama salah!"); return; } const { error: updatePassError } = await supabase.auth.updateUser({ password: newPassword }); if (updatePassError) { setMsg("Gagal update password."); return; } setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setShowPasswordUI(false); } setMsg("Berhasil disimpan!"); refreshProfile(); };
             const totalSpins = profileData.total_spins || 0; let nextLevelSpins = 50; let nextLevelName = "Rookie"; if (totalSpins >= 1000) { nextLevelSpins = 10000; nextLevelName = "Legend"; } else if (totalSpins >= 500) { nextLevelSpins = 1000; nextLevelName = "Casino King"; } else if (totalSpins >= 50) { nextLevelSpins = 500; nextLevelName = "High Roller"; } const progressPercent = Math.min(100, (totalSpins / nextLevelSpins) * 100);
             const getBorderClass = (id) => { if(id === 'neon-blue') return 'border-neon-blue'; if(id === 'neon-pink') return 'border-neon-pink'; if(id === 'gold-king') return 'border-gold-king'; if(id === 'rainbow') return 'border-rainbow'; return 'border-2 border-yellow-500'; };
             return (<div className="max-w-xl mx-auto p-6 relative">{isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}<h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2><div className="mb-6 p-5 bg-slate-800 rounded-xl border border-yellow-500/20 shadow-lg"><div className="flex justify-between items-end mb-2"><div><span className="text-slate-400 text-xs block mb-1 uppercase tracking-widest">Current Rank</span><div className="text-2xl font-black text-white flex items-center gap-2 italic"><Icons.Crown className="text-yellow-500 w-6 h-6"/> {profileData.title}</div></div><div className="text-right"><span className="text-yellow-400 font-bold text-sm">{totalSpins} / {nextLevelSpins}</span><span className="text-slate-500 text-[10px] block">Menuju {nextLevelName}</span></div></div><div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700"><div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div></div></div><form onSubmit={handleUpdate} className="space-y-6"><div className="flex flex-col items-center gap-4"><div onClick={()=>fileRef.current.click()} className={`w-32 h-32 rounded-full bg-slate-800 overflow-hidden cursor-pointer hover:opacity-80 relative group ${getBorderClass(profileData.avatar_border)}`}><img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/><div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div></div><input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/></div><div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div><div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div><div className="border-t border-white/10 pt-4"><button type="button" onClick={() => setShowPasswordUI(!showPasswordUI)} className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"><span className="text-sm font-bold">Ubah Password</span><div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div></button>{showPasswordUI && (<div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5"><div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div></div>)}</div><button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>{msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}</form></div>)
         }
-        function TopUpPage({ session, setWinMessage }) { const [amount, setAmount] = React.useState(10000); const [reason, setReason] = React.useState(''); const [loading, setLoading] = React.useState(false); const [status, setStatus] = React.useState(''); const handleRequest = async (e) => { e.preventDefault(); if(!reason) return; setLoading(true); const { error } = await supabase.from('topup_requests').insert([{ user_id: session.user.id, user_email: session.user.email, amount: amount, reason: reason }]); if (error) { alert("Gagal kirim request: " + error.message); } else { setStatus('sent'); setWinMessage('Request Top Up Terkirim!'); setReason(''); } setLoading(false); }; if (status === 'sent') { return (<div className="p-8 text-center bg-slate-800/50 rounded-xl border border-green-500/30 max-w-lg mx-auto mt-10"><div className="text-5xl mb-4">⏳</div><h3 className="text-xl font-bold text-white mb-2">Permintaan Terkirim!</h3><p className="text-slate-400 mb-4">Admin akan mengecek alasan Anda. Saldo akan masuk otomatis jika disetujui.</p><button onClick={() => setStatus('')} className="px-6 py-2 bg-slate-700 rounded hover:bg-slate-600">Buat Baru</button></div>); } return (<div className="max-w-2xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2><div className="bg-slate-800/50 p-6 rounded-xl border border-white/10"><form onSubmit={handleRequest} className="space-y-6"><div><label className="block text-sm text-slate-400 mb-3">Pilih Nominal</label><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (<button key={amt} type="button" onClick={() => setAmount(amt)} className={`p-4 rounded-xl border transition-all ${amount === amt ? 'bg-yellow-500 text-black border-yellow-500 font-bold ring-2 ring-yellow-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}>{amt.toLocaleString()}</button>))}</div></div><div><label className="block text-sm text-slate-400 mb-1">Alasan Top Up</label><textarea rows="3" value={reason} onChange={e => setReason(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Ingin mencoba pola gacor baru..." required /></div><button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:brightness-110 transition shadow-lg">{loading ? 'MEMPROSES...' : `AJUKAN TOP UP (${amount.toLocaleString()})`}</button></form></div></div>); }
-        function FeedbackPage({ session }) { const [title, setTitle] = React.useState(''); const [desc, setDesc] = React.useState(''); const [image, setImage] = React.useState(null); const [isSent, setIsSent] = React.useState(false); const [loading, setLoading] = React.useState(false); const fileRef = React.useRef(null); const handleImage = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 3 * 1024 * 1024) return alert("Maks 3MB"); const reader = new FileReader(); reader.onload = () => setImage(reader.result); reader.readAsDataURL(file); } }; const handleSubmit = async (e) => { e.preventDefault(); if(!title || !desc) return; setLoading(true); const { error } = await supabase.from('feedback').insert([{ user_id: session.user.id, user_email: session.user.email, title: title, message: desc, image_url: image }]); if (error) { alert("Gagal kirim feedback: " + error.message); } else { setIsSent(true); setTimeout(() => { setTitle(''); setDesc(''); setImage(null); setIsSent(false); }, 2000); } setLoading(false); }; return (<div className="max-w-2xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Kirim Feedback</h2><div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">{isSent ? (<div className="text-center py-10"><div className="text-4xl mb-2">✅</div><h3 className="text-xl font-bold text-white">Terima Kasih!</h3><p className="text-slate-400">Masukan Anda telah kami terima.</p></div>) : (<form onSubmit={handleSubmit} className="space-y-4"><div><label className="block text-sm text-slate-400 mb-1">Judul Laporan</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" required /></div><div><label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label><textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." required /></div><div><label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label><div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer relative overflow-hidden">{image ? (<img src={image} className="h-32 mx-auto object-contain" />) : (<div className="flex flex-col items-center gap-2 text-slate-500"><Icons.Image /><span className="text-xs">Klik untuk upload screenshot (Max 3MB)</span></div>)}</div><input type="file" ref={fileRef} onChange={handleImage} className="hidden" accept="image/*" />{image && <button type="button" onClick={() => setImage(null)} className="text-xs text-red-400 mt-2 underline">Hapus Gambar</button>}</div><button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">{loading ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}</button></form>)}</div></div>); }
-        function InboxPage({ profileData }) { const [messages, setMessages] = React.useState([]); const [loading, setLoading] = React.useState(true); React.useEffect(() => { const fetchMessages = async () => { const { data, error } = await supabase.from('feedback').select('*').order('created_at', { ascending: false }); if (data) setMessages(data); setLoading(false); }; fetchMessages(); }, []); const handleDelete = async (id) => { if(confirm("Hapus pesan ini?")) { await supabase.from('feedback').delete().eq('id', id); setMessages(prev => prev.filter(m => m.id !== id)); } }; if (loading) return <div className="p-8 text-center text-slate-500">Memuat pesan...</div>; return (<div className="max-w-4xl mx-auto p-6"><div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4"><h2 className="text-2xl font-cyber text-yellow-400">Inbox {profileData.role === 'admin' ? 'Admin' : 'Saya'}</h2></div><div className="space-y-4">{messages.length === 0 ? (<div className="text-center text-slate-500 py-10">Belum ada pesan masuk.</div>) : (messages.map(msg => (<div key={msg.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition relative group">{profileData.role === 'admin' && (<button onClick={() => handleDelete(msg.id)} className="absolute top-3 right-3 p-2 bg-slate-900 rounded-full text-slate-500 hover:text-red-500 hover:bg-white transition opacity-0 group-hover:opacity-100"><Icons.Trash /></button>)}<div className="flex justify-between items-start mb-2 pr-8"><div><h3 className="font-bold text-white text-lg">{msg.title}</h3><p className="text-xs text-yellow-500">Dari: {msg.user_email}</p></div><span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleDateString()}</span></div><p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{msg.message}</p>{msg.image_url && (<div className="mt-2"><p className="text-xs text-slate-500 mb-1">Lampiran:</p><img src={msg.image_url} className="max-h-48 rounded border border-slate-600" /></div>)}</div>)))}</div></div>); }
-        function AdminRequestsPage() { const [requests, setRequests] = React.useState([]); const [loading, setLoading] = React.useState(true); const fetchRequests = async () => { const { data } = await supabase.from('topup_requests').select('*').order('created_at', { ascending: false }); if (data) setRequests(data); setLoading(false); }; React.useEffect(() => { fetchRequests(); }, []); const handleAction = async (req, action) => { if (action === 'approve') { const { data: userData } = await supabase.from('players').select('balance').eq('id', req.user_id).single(); if (userData) { await supabase.from('players').update({ balance: userData.balance + req.amount }).eq('id', req.user_id); } await supabase.from('topup_requests').update({ status: 'approved' }).eq('id', req.id); } else if (action === 'reject') { await supabase.from('topup_requests').update({ status: 'rejected' }).eq('id', req.id); } else if (action === 'delete') { if(confirm("Hapus data pengajuan ini?")) { await supabase.from('topup_requests').delete().eq('id', req.id); } } fetchRequests(); }; if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>; return (<div className="max-w-4xl mx-auto p-6"><h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Pengajuan Top Up</h2><div className="space-y-4">{requests.length === 0 ? (<div className="text-center text-slate-500 py-10 border border-dashed border-slate-700 rounded-xl">Tidak ada data pengajuan.</div>) : (requests.map(req => (<div key={req.id} className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center relative group ${req.status === 'pending' ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-70 hover:opacity-100'}`}><button onClick={() => handleAction(req, 'delete')} className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition"><Icons.Trash /></button><div><div className="flex items-center gap-2 mb-1"><span className={`font-bold text-lg ${req.status === 'approved' ? 'text-green-500' : req.status === 'rejected' ? 'text-red-500' : 'text-yellow-400'}`}>{req.status === 'approved' ? '✓ ' : req.status === 'rejected' ? '✕ ' : '+ '}{req.amount.toLocaleString()}</span><span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">{req.user_email}</span>{req.status !== 'pending' && <span className="text-[10px] uppercase border border-slate-600 px-1 rounded text-slate-500">{req.status}</span>}</div><p className="text-sm text-slate-300 italic">"{req.reason}"</p><span className="text-[10px] text-slate-500">{new Date(req.created_at).toLocaleString()}</span></div>{req.status === 'pending' && (<div className="flex gap-2 w-full sm:w-auto"><button onClick={() => handleAction(req, 'reject')} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded hover:bg-red-900/50 transition text-sm font-bold">TOLAK</button><button onClick={() => handleAction(req, 'approve')} className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition text-sm font-bold shadow-lg">TERIMA (ACC)</button></div>)}</div>)))}</div></div>); }
         
+        function TopUpPage({ session, setWinMessage }) {
+            const [amount, setAmount] = React.useState(10000);
+            const [reason, setReason] = React.useState('');
+            const [loading, setLoading] = React.useState(false);
+            const [status, setStatus] = React.useState(''); 
+
+            const handleRequest = async (e) => {
+                e.preventDefault();
+                if(!reason) return;
+                setLoading(true);
+                
+                const { error } = await supabase.from('topup_requests').insert([{
+                    user_id: session.user.id,
+                    user_email: session.user.email,
+                    amount: amount,
+                    reason: reason
+                }]);
+
+                if (error) {
+                    alert("Gagal kirim request: " + error.message);
+                } else {
+                    setStatus('sent');
+                    setWinMessage('Request Top Up Terkirim!');
+                    setReason('');
+                }
+                setLoading(false);
+            };
+
+            if (status === 'sent') {
+                return (
+                    <div className="p-8 text-center bg-slate-800/50 rounded-xl border border-green-500/30 max-w-lg mx-auto mt-10">
+                        <div className="text-5xl mb-4">⏳</div>
+                        <h3 className="text-xl font-bold text-white mb-2">Permintaan Terkirim!</h3>
+                        <p className="text-slate-400 mb-4">Admin akan mengecek alasan Anda. Saldo akan masuk otomatis jika disetujui.</p>
+                        <button onClick={() => setStatus('')} className="px-6 py-2 bg-slate-700 rounded hover:bg-slate-600">Buat Baru</button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-2xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2>
+                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
+                        <form onSubmit={handleRequest} className="space-y-6">
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-3">Pilih Nominal</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (
+                                        <button 
+                                            key={amt} 
+                                            type="button"
+                                            onClick={() => setAmount(amt)}
+                                            className={`p-4 rounded-xl border transition-all ${amount === amt ? 'bg-yellow-500 text-black border-yellow-500 font-bold ring-2 ring-yellow-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
+                                        >
+                                            {amt.toLocaleString()}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-1">Alasan Top Up</label>
+                                <textarea 
+                                    rows="3" 
+                                    value={reason} 
+                                    onChange={e => setReason(e.target.value)} 
+                                    className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" 
+                                    placeholder="Contoh: Ingin mencoba pola gacor baru..." 
+                                    required 
+                                />
+                            </div>
+
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:brightness-110 transition shadow-lg">
+                                {loading ? 'MEMPROSES...' : `AJUKAN TOP UP (${amount.toLocaleString()})`}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function FeedbackPage({ session }) {
+            const [title, setTitle] = React.useState('');
+            const [desc, setDesc] = React.useState('');
+            const [image, setImage] = React.useState(null); 
+            const [isSent, setIsSent] = React.useState(false);
+            const [loading, setLoading] = React.useState(false);
+            const fileRef = React.useRef(null);
+
+            const handleImage = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                     if (file.size > 3 * 1024 * 1024) return alert("Maks 3MB");
+                     const reader = new FileReader();
+                     reader.onload = () => setImage(reader.result);
+                     reader.readAsDataURL(file);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if(!title || !desc) return;
+                setLoading(true);
+                
+                const { error } = await supabase.from('feedback').insert([{
+                    user_id: session.user.id,
+                    user_email: session.user.email,
+                    title: title,
+                    message: desc,
+                    image_url: image
+                }]);
+
+                if (error) {
+                    alert("Gagal kirim feedback: " + error.message);
+                } else {
+                    setIsSent(true);
+                    setTimeout(() => {
+                        setTitle(''); setDesc(''); setImage(null); setIsSent(false);
+                    }, 2000);
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="max-w-2xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Kirim Feedback</h2>
+                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
+                        {isSent ? (
+                            <div className="text-center py-10">
+                                <div className="text-4xl mb-2">✅</div>
+                                <h3 className="text-xl font-bold text-white">Terima Kasih!</h3>
+                                <p className="text-slate-400">Masukan Anda telah kami terima.</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Judul Laporan</label>
+                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label>
+                                    <textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label>
+                                    <div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer relative overflow-hidden">
+                                        {image ? (
+                                            <img src={image} className="h-32 mx-auto object-contain" />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2 text-slate-500">
+                                                <Icons.Image /><span className="text-xs">Klik untuk upload screenshot (Max 3MB)</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <input type="file" ref={fileRef} onChange={handleImage} className="hidden" accept="image/*" />
+                                    {image && <button type="button" onClick={() => setImage(null)} className="text-xs text-red-400 mt-2 underline">Hapus Gambar</button>}
+                                </div>
+                                <button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
+                                    {loading ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function InboxPage({ profileData }) {
+            const [messages, setMessages] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+
+            const fetchMessages = async () => {
+                const { data } = await supabase.from('feedback').select('*').order('created_at', { ascending: false });
+                if (data) setMessages(data);
+                setLoading(false);
+            };
+
+            React.useEffect(() => { fetchMessages(); }, []);
+
+            const handleDelete = async (id) => {
+                if(confirm("Hapus pesan ini?")) {
+                    await supabase.from('feedback').delete().eq('id', id);
+                    setMessages(prev => prev.filter(m => m.id !== id));
+                }
+            };
+
+            if (loading) return <div className="p-8 text-center text-slate-500">Memuat pesan...</div>;
+
+            return (
+                <div className="max-w-4xl mx-auto p-6">
+                    <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                        <h2 className="text-2xl font-cyber text-yellow-400">Inbox {profileData.role === 'admin' ? 'Admin' : 'Saya'}</h2>
+                    </div>
+                    <div className="space-y-4">
+                        {messages.length === 0 ? (
+                            <div className="text-center text-slate-500 py-10">Belum ada pesan masuk.</div>
+                        ) : (
+                            messages.map(msg => (
+                                <div key={msg.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition relative group">
+                                    {profileData.role === 'admin' && (
+                                        <button onClick={() => handleDelete(msg.id)} className="absolute top-3 right-3 p-2 bg-slate-900 rounded-full text-slate-500 hover:text-red-500 hover:bg-white transition opacity-0 group-hover:opacity-100">
+                                            <Icons.Trash />
+                                        </button>
+                                    )}
+
+                                    <div className="flex justify-between items-start mb-2 pr-8">
+                                        <div>
+                                            <h3 className="font-bold text-white text-lg">{msg.title}</h3>
+                                            <p className="text-xs text-yellow-500">Dari: {msg.user_email}</p>
+                                        </div>
+                                        <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{msg.message}</p>
+                                    {msg.image_url && (
+                                        <div className="mt-2">
+                                            <p className="text-xs text-slate-500 mb-1">Lampiran:</p>
+                                            <img src={msg.image_url} className="max-h-48 rounded border border-slate-600" />
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function AdminRequestsPage() {
+            const [requests, setRequests] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+
+            const fetchRequests = async () => {
+                const { data } = await supabase.from('topup_requests').select('*').order('created_at', { ascending: false }); 
+                if (data) setRequests(data);
+                setLoading(false);
+            };
+
+            React.useEffect(() => { fetchRequests(); }, []);
+
+            const handleAction = async (req, action) => {
+                if (action === 'approve') {
+                    const { data: userData } = await supabase.from('players').select('balance').eq('id', req.user_id).single();
+                    if (userData) { await supabase.from('players').update({ balance: userData.balance + req.amount }).eq('id', req.user_id); }
+                    await supabase.from('topup_requests').update({ status: 'approved' }).eq('id', req.id);
+                } else if (action === 'reject') {
+                    await supabase.from('topup_requests').update({ status: 'rejected' }).eq('id', req.id);
+                } else if (action === 'delete') {
+                    if(confirm("Hapus data pengajuan ini?")) {
+                        await supabase.from('topup_requests').delete().eq('id', req.id);
+                    }
+                }
+                fetchRequests();
+            };
+
+            if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
+
+            return (
+                <div className="max-w-4xl mx-auto p-6">
+                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Pengajuan Top Up</h2>
+                    <div className="space-y-4">
+                        {requests.length === 0 ? (<div className="text-center text-slate-500 py-10 border border-dashed border-slate-700 rounded-xl">Tidak ada data pengajuan.</div>) : (
+                            requests.map(req => (
+                                <div key={req.id} className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center relative group ${req.status === 'pending' ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-70 hover:opacity-100'}`}>
+                                    
+                                    <button onClick={() => handleAction(req, 'delete')} className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition">
+                                        <Icons.Trash />
+                                    </button>
+
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={`font-bold text-lg ${req.status === 'approved' ? 'text-green-500' : req.status === 'rejected' ? 'text-red-500' : 'text-yellow-400'}`}>
+                                                {req.status === 'approved' ? '✓ ' : req.status === 'rejected' ? '✕ ' : '+ '}{req.amount.toLocaleString()}
+                                            </span>
+                                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">{req.user_email}</span>
+                                            {req.status !== 'pending' && <span className="text-[10px] uppercase border border-slate-600 px-1 rounded text-slate-500">{req.status}</span>}
+                                        </div>
+                                        <p className="text-sm text-slate-300 italic">"{req.reason}"</p>
+                                        <span className="text-[10px] text-slate-500">{new Date(req.created_at).toLocaleString()}</span>
+                                    </div>
+                                    
+                                    {req.status === 'pending' && (
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <button onClick={() => handleAction(req, 'reject')} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded hover:bg-red-900/50 transition text-sm font-bold">TOLAK</button>
+                                            <button onClick={() => handleAction(req, 'approve')} className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition text-sm font-bold shadow-lg">TERIMA (ACC)</button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         // --- GLOBAL CHAT COMPONENT ---
         function GlobalChat({ session, profileData }) {
             const [isOpen, setIsOpen] = React.useState(false);
             const [message, setMessage] = React.useState('');
             const [chats, setChats] = React.useState([]);
             const [image, setImage] = React.useState(null);
-            const [isExpanded, setIsExpanded] = React.useState(false); // Full Screen State
+            const [isExpanded, setIsExpanded] = React.useState(false);
             const messagesEndRef = React.useRef(null);
             const fileRef = React.useRef(null);
 
             const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
+            // Realtime & Fetch
             React.useEffect(() => {
                 const fetchChats = async () => {
                     const { data } = await supabase.from('global_chat').select('*').order('created_at', { ascending: false }).limit(50);
@@ -631,10 +1333,15 @@
                         setTimeout(scrollToBottom, 100);
                     })
                     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'global_chat' }, (payload) => {
-                        if (!payload.old.id) setChats([]); else setChats(prev => prev.filter(c => c.id !== payload.old.id));
+                        if (!payload.old.id) {
+                             setChats([]);
+                        } else {
+                             setChats(prev => prev.filter(c => c.id !== payload.old.id));
+                        }
                         fetchChats();
                     })
                     .subscribe();
+
                 return () => supabase.removeChannel(subscription);
             }, []);
 
@@ -657,7 +1364,7 @@
             };
             
             const handleClearAll = async () => {
-                if(confirm("Hapus SEMUA pesan?")) {
+                if(confirm("Hapus SEMUA pesan chat global? Tindakan ini tidak bisa dibatalkan.")) {
                     const { error } = await supabase.from('global_chat').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
                     if(error) alert("Gagal hapus chat");
                 }
@@ -665,16 +1372,21 @@
 
             return (
                 <>
-                    <button onClick={() => setIsOpen(!isOpen)} className={`fixed bottom-4 right-4 z-50 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${isOpen ? 'bg-red-600 rotate-180' : 'bg-gradient-to-r from-blue-600 to-purple-600 animate-bounce'}`}>{isOpen ? <Icons.Minimize className="text-white" /> : <Icons.Chat className="text-white" />}</button>
+                    <button onClick={() => setIsOpen(!isOpen)} className={`fixed bottom-4 right-4 z-50 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${isOpen ? 'bg-red-600 rotate-180' : 'bg-gradient-to-r from-blue-600 to-purple-600 animate-bounce'}`}>
+                        {isOpen ? <Icons.Minimize className="text-white" /> : <Icons.Chat className="text-white" />}
+                    </button>
                     {isOpen && (
-                        // FULL SCREEN LOGIC APPLIED HERE
                         <div className={`fixed z-50 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex flex-col animate-fade-in overflow-hidden transition-all duration-300 ${isExpanded ? 'inset-0 rounded-none' : 'bottom-20 right-4 w-full max-w-sm h-[500px]'}`}>
                             <div className="p-3 bg-gradient-to-r from-blue-900 to-purple-900 border-b border-white/10 flex justify-between items-center">
                                 <h3 className="font-cyber font-bold text-white flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Global Chat</h3>
                                 <div className="flex gap-2">
-                                    {profileData.role === 'admin' && (<button onClick={handleClearAll} className="text-[10px] bg-red-600 px-2 py-1 rounded hover:bg-red-500 text-white"><Icons.Trash /></button>)}
+                                    {profileData.role === 'admin' && (
+                                        <button onClick={handleClearAll} className="text-[10px] bg-red-600 px-2 py-1 rounded hover:bg-red-500 text-white flex items-center gap-1">
+                                            <Icons.Trash />
+                                        </button>
+                                    )}
                                     <button onClick={() => setIsExpanded(!isExpanded)} className="text-white hover:text-yellow-400 transition">
-                                        {isExpanded ? <Icons.Minimize /> : <Icons.Home className="rotate-45" />}
+                                        {isExpanded ? <Icons.Minimize /> : <Icons.Maximize />}
                                     </button>
                                     <button onClick={() => setIsOpen(false)} className="text-white hover:text-red-400"><Icons.X /></button>
                                 </div>
@@ -697,7 +1409,12 @@
                                 <div ref={messagesEndRef} />
                             </div>
                             {image && (<div className="px-4 pt-2 relative"><div className="bg-slate-800 rounded-lg p-2 flex items-center justify-between"><img src={image} className="h-10 w-10 object-cover rounded" /><button onClick={() => setImage(null)} className="text-red-400 text-xs hover:underline">Hapus</button></div></div>)}
-                            <form onSubmit={handleSend} className="p-3 bg-slate-800 border-t border-white/10 flex gap-2 items-center"><button type="button" onClick={() => fileRef.current.click()} className="p-2 text-slate-400 hover:text-blue-400 transition"><Icons.Image /></button><input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleImageSelect} /><input value={message} onChange={e => setMessage(e.target.value)} placeholder="Kirim pesan..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm text-white focus:border-blue-500 outline-none"/><button type="submit" disabled={!message && !image} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition transform active:scale-95"><Icons.Send /></button></form>
+                            <form onSubmit={handleSend} className="p-3 bg-slate-800 border-t border-white/10 flex gap-2 items-center">
+                                <button type="button" onClick={() => fileRef.current.click()} className="p-2 text-slate-400 hover:text-blue-400 transition"><Icons.Image /></button>
+                                <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleImageSelect} />
+                                <input value={message} onChange={e => setMessage(e.target.value)} placeholder="Kirim pesan..." className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm text-white focus:border-blue-500 outline-none"/>
+                                <button type="submit" disabled={!message && !image} className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition transform active:scale-95"><Icons.Send /></button>
+                            </form>
                         </div>
                     )}
                 </>
@@ -710,8 +1427,7 @@
             const [activeGame, setActiveGame] = React.useState(null);
             const [balance, setBalance] = React.useState(0);
             const [winMessage, setWinMessage] = React.useState('Selamat Datang');
-            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default' });
-            const [searchUserView, setSearchUserView] = React.useState(false);
+            const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default', inventory: ['default'] });
 
             const loadUserData = async () => {
                 try {
@@ -775,7 +1491,6 @@
                 else if (view === 'shop') content = <ShopPage session={session} balance={balance} updateBalance={updateBalance} profileData={profileData} refreshProfile={loadUserData} />;
                 else if (view === 'inbox') content = <InboxPage profileData={profileData} />; 
                 else if (view === 'requests') content = <AdminRequestsPage />;
-                else if (view === 'search') content = <SearchUserPage session={session} />;
                 else if (view === 'game') {
                     if (!activeGame) content = <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} />;
                     else {
@@ -811,7 +1526,7 @@
                         </div>
                         <nav className="flex-1 p-4 space-y-1">
                             {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'search', l:'Cari Pemain', i:Icons.Search}, {id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'shop',l:'Avatar Shop',i:Icons.ShoppingBag},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
-                            {profileData.role === 'admin' && (<><div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div><button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}><Icons.Inbox /> Inbox</button><button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button></>)}<div className="my-4 border-t border-white/5"></div><button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button></nav><div className="p-4"><button onClick={onLogout} className="w-full flex gap-2 p-2 text-red-400 hover:bg-red-900/20 rounded"><Icons.LogOut/> Keluar</button></div></aside><main className="flex-1 h-screen overflow-y-auto flex flex-col"><header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10"><div className="md:hidden font-cyber text-yellow-500">ROYAL</div><div onClick={() => setView('profile')} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"><div className="hidden md:block text-right"><div className="font-bold text-white text-sm">{profileData.full_name}</div><div className="text-[10px] text-yellow-400 font-bold uppercase">{profileData.title}</div></div><div className={`w-8 h-8 rounded-full overflow-hidden ${getBorderClass(profileData.avatar_border)}`}><img src={profileData.avatar_url} className="w-full h-full object-cover"/></div></div><div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div></header><div className="p-4 md:p-8 flex-1">{renderContent()}</div><div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3"><button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button><button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button><button onClick={()=>setView('shop')} className="text-slate-400"><Icons.ShoppingBag/></button>{profileData.role === 'admin' && <button onClick={()=>setView('requests')} className="text-green-500"><Icons.FileText/></button>}<button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button></div></main><GlobalChat session={session} profileData={profileData} /></div>);
+                            {profileData.role === 'admin' && (<><div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div><button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}><Icons.Inbox /> Inbox</button><button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button></>)}<div className="my-4 border-t border-white/5"></div><button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button></nav><div className="p-4"><button onClick={onLogout} className="w-full flex gap-2 p-2 text-red-400 hover:bg-red-900/20 rounded"><Icons.LogOut/> Keluar</button></div></aside><main className="flex-1 h-screen overflow-y-auto flex flex-col"><header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10"><div className="md:hidden font-cyber text-yellow-500">ROYAL</div><div className="flex-1"></div><div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div></header><div className="p-4 md:p-8 flex-1">{renderContent()}</div><div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3"><button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button><button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button><button onClick={()=>setView('shop')} className="text-slate-400"><Icons.ShoppingBag/></button>{profileData.role === 'admin' && <button onClick={()=>setView('requests')} className="text-green-500"><Icons.FileText/></button>}<button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button></div></main><GlobalChat session={session} profileData={profileData} /></div>);
         }
 
         function App() {
