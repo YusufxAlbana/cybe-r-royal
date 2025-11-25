@@ -125,7 +125,8 @@
                         eq: () => ({ single: async () => ({ data: null, error: 'Offline' }) }),
                         order: () => ({ data: [], error: null }),
                         limit: () => ({ data: [], error: null }),
-                        ilike: () => ({ data: [], error: null }) 
+                        ilike: () => ({ data: [], error: null }),
+                        range: () => ({ data: [], error: null }) // Mock range for pagination
                     }), 
                     insert: async () => ({ error: null }), 
                     update: async () => ({ error: 'Offline', eq: () => ({}) }), 
@@ -179,8 +180,6 @@
         // --- BORDER CATALOG ---
         const BORDER_CATALOG = [
             { id: 'default', name: 'Default', price: 0, class: 'border-2 border-yellow-500' },
-            
-            // Tier 1: Solid Colors (Murah)
             { id: 'solid-red', name: 'Red Basic', price: 1000, class: 'border-solid-red' },
             { id: 'solid-green', name: 'Green Basic', price: 1000, class: 'border-solid-green' },
             { id: 'solid-blue', name: 'Blue Basic', price: 1000, class: 'border-solid-blue' },
@@ -190,23 +189,17 @@
             { id: 'solid-pink', name: 'Pink Basic', price: 1000, class: 'border-solid-pink' },
             { id: 'solid-white', name: 'Clean White', price: 2000, class: 'border-solid-white' },
             { id: 'solid-gray', name: 'Steel Gray', price: 2000, class: 'border-solid-gray' },
-
-            // Tier 2: Neon Styles (Menengah)
             { id: 'neon-blue', name: 'Neon Blue', price: 10000, class: 'border-neon-blue' },
             { id: 'neon-pink', name: 'Neon Pink', price: 10000, class: 'border-neon-pink' },
             { id: 'neon-green', name: 'Neon Green', price: 10000, class: 'border-2 border-green-400 shadow-[0_0_10px_#4ade80]' },
             { id: 'neon-red', name: 'Neon Red', price: 10000, class: 'border-2 border-red-500 shadow-[0_0_10px_#ef4444]' },
             { id: 'neon-purple', name: 'Neon Purple', price: 12000, class: 'border-2 border-purple-500 shadow-[0_0_10px_#a855f7]' },
-            
-            // Tier 3: Gradient & Fancy (Mahal)
             { id: 'grad-sunset', name: 'Sunset', price: 25000, class: 'p-1 bg-gradient-to-br from-orange-500 to-purple-600' },
             { id: 'grad-ocean', name: 'Ocean Depth', price: 25000, class: 'p-1 bg-gradient-to-br from-blue-400 to-blue-900' },
             { id: 'grad-forest', name: 'Mystic Forest', price: 25000, class: 'p-1 bg-gradient-to-br from-green-400 to-emerald-900' },
             { id: 'grad-love', name: 'Love Potion', price: 25000, class: 'p-1 bg-gradient-to-br from-pink-400 to-red-600' },
             { id: 'grad-gold', name: 'Liquid Gold', price: 30000, class: 'p-1 bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700' },
             { id: 'grad-silver', name: 'Silver Lining', price: 30000, class: 'p-1 bg-gradient-to-b from-slate-300 via-slate-100 to-slate-400' },
-            
-            // Tier 4: Animated & Effects (Sultan)
             { id: 'anim-pulse-red', name: 'Red Pulse', price: 50000, class: 'border-2 border-red-500 animate-pulse' },
             { id: 'anim-pulse-gold', name: 'Gold Pulse', price: 55000, class: 'border-2 border-yellow-400 animate-pulse' },
             { id: 'anim-spin-dash', name: 'Dashed Spin', price: 60000, class: 'border-dashed-anim' },
@@ -216,15 +209,11 @@
             { id: 'rgb-flow', name: 'RGB Gamer', price: 80000, class: 'border-rgb-flow' },
             { id: 'glitch', name: 'Cyber Glitch', price: 90000, class: 'border-glitch' },
             { id: 'matrix', name: 'The Matrix', price: 95000, class: 'border-matrix' },
-            
-            // Tier 5: Legendary (Sangat Mahal)
             { id: 'gold-king', name: 'Gold King', price: 100000, class: 'border-gold-king' },
             { id: 'gold-shimmer', name: 'Royal Shimmer', price: 120000, class: 'border-gold-shimmer' },
             { id: 'plasma', name: 'Plasma Coil', price: 150000, class: 'border-plasma' },
             { id: 'rainbow', name: 'Rainbow', price: 500000, class: 'border-rainbow' },
-            
-            // Ultimate
-            { id: 'collector', name: 'The Collector', price: 999999, class: 'border-collector' }, // Unbuyable normally, just logic reference or super expensive
+            { id: 'collector', name: 'The Collector', price: 999999, class: 'border-collector' },
         ];
 
         const getBorderClass = (id) => {
@@ -232,29 +221,83 @@
             return item ? item.class : 'border-2 border-yellow-500';
         };
 
+        const GAME_INFO = {
+            slot: {
+                title: "Cara Main: Cyber Slots",
+                desc: "Tekan tombol SPIN untuk memutar gulungan. Cocokkan simbol yang sama di baris tengah untuk menang. Simbol 'Z' (Petir) memberikan bayaran tertinggi!",
+                win: "3-5 simbol sama di baris tengah.",
+                luck: "Meningkatkan peluang munculnya simbol Wild (7)."
+            },
+            wheel: {
+                title: "Cara Main: Neon Wheel",
+                desc: "Pertaruhkan chip Anda dan putar rodanya! Roda akan berhenti di salah satu segmen pengali. Jika berhenti di angka (x2, x5, x10), taruhan Anda dikalikan. Hati-hati dengan ZONK!",
+                win: "Berhenti di segmen Multiplier.",
+                luck: "Mengurangi ukuran segmen ZONK secara visual (ilusi)."
+            },
+            highlow: {
+                title: "Cara Main: Code Breaker",
+                desc: "Tebak apakah angka berikutnya lebih BESAR atau lebih KECIL dari angka yang ditampilkan. Angka berkisar 1-13.",
+                win: "Tebakan benar = Taruhan x2.",
+                luck: "Memberikan hint probabilitas (bocoran tipis)."
+            },
+            dice: {
+                title: "Cara Main: Cosmic Dice",
+                desc: "Pilih prediksi total mata dadu: Rendah (2-6), Tujuh (7), atau Tinggi (8-12).",
+                win: "Tebakan benar. Angka 7 membayar x5!",
+                luck: "Dadu lebih sering mendarat di angka favorit Anda."
+            },
+            rocket: {
+                title: "Cara Main: Rocket Crash",
+                desc: "Roket akan meluncur dan pengali terus naik. Tekan 'AMBIL' sebelum roket meledak (Crash) untuk mengamankan kemenangan.",
+                win: "Cashout sebelum Crash.",
+                luck: "Roket cenderung terbang lebih lama di ronde bonus."
+            }
+        };
+
         // --- UTILS ---
         function BetControl({ bet, setBet, balance }) {
             const minBet = 100;
-            const maxBet = Math.min(5000, balance > 0 ? balance : 5000); 
+            const maxBet = Math.min(5000, balance > 0 ? balance : 5000);
+            
+            const handleInputChange = (e) => {
+                // Hanya izinkan angka
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setBet(val === '' ? 0 : parseInt(val));
+            };
+
+            const handleBlur = () => {
+                let newBet = bet;
+                if (newBet < minBet) newBet = minBet;
+                if (newBet > maxBet && maxBet >= minBet) newBet = maxBet;
+                setBet(newBet);
+            }
+
             const adjustBet = (amount) => {
                 let newBet = bet + amount;
                 if (newBet < minBet) newBet = minBet;
                 if (newBet > maxBet && maxBet >= minBet) newBet = maxBet;
                 setBet(newBet);
             };
+
             return (
-                <div className="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-white/10 w-full mb-4">
-                    <button onClick={() => adjustBet(-100)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-red-400"><Icons.Minus /></button>
-                    <div className="text-center">
-                        <div className="text-[10px] text-slate-400 uppercase">TARUHAN (BET)</div>
-                        <div className="text-xl font-bold text-yellow-400 font-mono">{bet.toLocaleString()}</div>
+                <div className="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-white/10 w-full mb-4 gap-2">
+                    <button onClick={() => adjustBet(-100)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-red-400 flex-shrink-0"><Icons.Minus /></button>
+                    <div className="flex-1 relative">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] text-slate-400 uppercase bg-slate-900 px-1">TARUHAN</div>
+                        <input 
+                            type="text" 
+                            value={bet} 
+                            onChange={handleInputChange}
+                            onBlur={handleBlur}
+                            className="w-full bg-transparent text-center text-xl font-bold text-yellow-400 font-mono outline-none border-none py-1"
+                        />
                     </div>
-                    <button onClick={() => adjustBet(100)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-green-400"><Icons.Plus /></button>
+                    <button onClick={() => adjustBet(100)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-green-400 flex-shrink-0"><Icons.Plus /></button>
                 </div>
             );
         }
 
-        // --- COMPONENTS ---
+        // --- COMPONENTS --- (ImageCropper, AuthPage, GameAds unchanged but included for completeness)
 
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
@@ -814,92 +857,141 @@
 
         function SearchUserPage({ session }) {
             const [query, setQuery] = React.useState('');
-            const [results, setResults] = React.useState([]);
+            const [users, setUsers] = React.useState([]);
             const [loading, setLoading] = React.useState(false);
             const [selectedUser, setSelectedUser] = React.useState(null);
+            const [page, setPage] = React.useState(0);
+            const [hasMore, setHasMore] = React.useState(true);
+            const PAGE_SIZE = 5;
 
-            const handleSearch = async (e) => {
-                e.preventDefault();
-                if (!query) return;
+            const fetchUsers = async (reset = false) => {
                 setLoading(true);
-                const { data, error } = await supabase.from('players')
+                const currentPage = reset ? 0 : page;
+                const from = currentPage * PAGE_SIZE;
+                const to = from + PAGE_SIZE - 1;
+
+                let dbQuery = supabase
+                    .from('players')
                     .select('id, full_name, avatar_url, title, avatar_border, total_spins, created_at')
-                    .ilike('full_name', `%${query}%`)
-                    .limit(10);
-                
-                if (data) setResults(data);
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+
+                if (query) {
+                    dbQuery = dbQuery.ilike('full_name', `%${query}%`);
+                }
+
+                const { data, error } = await dbQuery;
+
+                if (data) {
+                    if (data.length < PAGE_SIZE) {
+                        setHasMore(false);
+                    } else {
+                        setHasMore(true);
+                    }
+
+                    if (reset) {
+                        setUsers(data);
+                        setPage(1);
+                    } else {
+                        setUsers(prev => [...prev, ...data]);
+                        setPage(prev => prev + 1);
+                    }
+                }
                 setLoading(false);
             };
+
+            React.useEffect(() => {
+                fetchUsers(true);
+            }, []);
+
+            const handleSearch = (e) => {
+                e.preventDefault();
+                fetchUsers(true);
+            };
+
+            const handleLoadMore = () => {
+                fetchUsers(false);
+            };
+
+            if (selectedUser) {
+                const level = Math.floor((selectedUser.total_spins || 0) / 10);
+                const joinDate = selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : '-';
+
+                return (
+                    <div className="max-w-lg mx-auto p-6 animate-fade-in">
+                        <button onClick={() => setSelectedUser(null)} className="mb-6 text-slate-400 hover:text-white flex items-center gap-2">
+                            <Icons.ArrowLeft /> Kembali
+                        </button>
+                        
+                        <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden relative">
+                            <div className="h-32 bg-gradient-to-r from-blue-900 to-purple-900 relative">
+                                <div className="absolute inset-0 bg-black/20"></div>
+                            </div>
+                            <div className="px-6 pb-6 relative">
+                                <div className="flex justify-center -mt-16 mb-4">
+                                    <div className={`w-32 h-32 rounded-full bg-slate-900 p-1 overflow-hidden ${getBorderClass(selectedUser.avatar_border)}`}>
+                                        <img src={selectedUser.avatar_url || `https://api.dicebear.com/9.x/dylan/svg?seed=${selectedUser.full_name}`} className="w-full h-full object-cover rounded-full bg-slate-800" />
+                                    </div>
+                                </div>
+                                
+                                <div className="text-center mb-6">
+                                    <h2 className="text-2xl font-bold text-white font-cyber">{selectedUser.full_name}</h2>
+                                    <div className="flex justify-center gap-2 mt-2">
+                                        <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full border border-yellow-500/30 uppercase">{selectedUser.title || 'Newbie'}</span>
+                                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">LVL {level}</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-slate-900/50 p-4 rounded-xl text-center border border-slate-700/50">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Total Spins</div>
+                                        <div className="text-xl font-bold text-white">{selectedUser.total_spins || 0}</div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-4 rounded-xl text-center border border-slate-700/50">
+                                        <div className="text-xs text-slate-500 uppercase mb-1">Bergabung</div>
+                                        <div className="text-sm font-bold text-white mt-1">{joinDate}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
                 <div className="max-w-2xl mx-auto p-6">
                     <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Cari Pemain</h2>
                     <form onSubmit={handleSearch} className="flex gap-2 mb-8">
-                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Nama user..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-yellow-500 outline-none" />
+                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cari nama user..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-yellow-500 outline-none" />
                         <button type="submit" className="bg-yellow-500 text-black px-6 rounded-xl font-bold hover:bg-yellow-400 flex items-center gap-2"><Icons.Search /> Cari</button>
                     </form>
 
-                    {selectedUser ? (
-                        <div className="max-w-lg mx-auto p-6 animate-fade-in">
-                            <button onClick={() => setSelectedUser(null)} className="mb-6 text-slate-400 hover:text-white flex items-center gap-2">
-                                <Icons.ArrowLeft /> Kembali
-                            </button>
-                            
-                            <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden relative">
-                                <div className="h-32 bg-gradient-to-r from-blue-900 to-purple-900 relative">
-                                    <div className="absolute inset-0 bg-black/20"></div>
+                    <div className="grid gap-4">
+                        {users.map((user, i) => (
+                            <div key={user.id} onClick={() => setSelectedUser(user)} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-4 cursor-pointer hover:bg-slate-700 transition group relative animate-fade-in">
+                                <div className={`w-16 h-16 rounded-full bg-slate-900 overflow-hidden ${getBorderClass(user.avatar_border)}`}>
+                                    <img src={user.avatar_url || `https://api.dicebear.com/9.x/dylan/svg?seed=${user.full_name}`} className="w-full h-full object-cover" />
                                 </div>
-                                <div className="px-6 pb-6 relative">
-                                    <div className="flex justify-center -mt-16 mb-4">
-                                        <div className={`w-32 h-32 rounded-full bg-slate-900 p-1 overflow-hidden ${getBorderClass(selectedUser.avatar_border)}`}>
-                                            <img src={selectedUser.avatar_url || `https://api.dicebear.com/9.x/dylan/svg?seed=${selectedUser.full_name}`} className="w-full h-full object-cover rounded-full bg-slate-800" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="text-center mb-6">
-                                        <h2 className="text-2xl font-bold text-white font-cyber">{selectedUser.full_name}</h2>
-                                        <div className="flex justify-center gap-2 mt-2">
-                                            <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-full border border-yellow-500/30 uppercase">{selectedUser.title || 'Newbie'}</span>
-                                            <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">LVL {Math.floor((selectedUser.total_spins || 0) / 10)}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div className="bg-slate-900/50 p-4 rounded-xl text-center border border-slate-700/50">
-                                            <div className="text-xs text-slate-500 uppercase mb-1">Total Spins</div>
-                                            <div className="text-xl font-bold text-white">{selectedUser.total_spins || 0}</div>
-                                        </div>
-                                        <div className="bg-slate-900/50 p-4 rounded-xl text-center border border-slate-700/50">
-                                            <div className="text-xs text-slate-500 uppercase mb-1">Bergabung</div>
-                                            <div className="text-sm font-bold text-white mt-1">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : '-'}</div>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <div className="font-bold text-white text-lg group-hover:text-yellow-400 transition-colors">{user.full_name}</div>
+                                    <span className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 font-bold uppercase border border-slate-600">{user.title || 'Newbie'}</span>
+                                </div>
+                                <div className="absolute right-4 text-slate-600 group-hover:text-white transition-colors">
+                                    <Icons.ArrowLeft className="transform rotate-180"/>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <>
-                            {loading ? <div className="text-center text-slate-500">Mencari...</div> : (
-                                <div className="grid gap-4">
-                                    {results.map((user, i) => (
-                                        <div key={i} onClick={() => setSelectedUser(user)} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-4 cursor-pointer hover:bg-slate-700 transition group relative">
-                                            <div className={`w-16 h-16 rounded-full bg-slate-900 overflow-hidden ${getBorderClass(user.avatar_border)}`}>
-                                                <img src={user.avatar_url || `https://api.dicebear.com/9.x/dylan/svg?seed=${user.full_name}`} className="w-full h-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-white text-lg group-hover:text-yellow-400 transition-colors">{user.full_name}</div>
-                                                <span className="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 font-bold uppercase border border-slate-600">{user.title || 'Newbie'}</span>
-                                            </div>
-                                            <div className="absolute right-4 text-slate-600 group-hover:text-white transition-colors">
-                                                <Icons.ArrowLeft className="transform rotate-180"/>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {results.length === 0 && query && !loading && <div className="text-center text-slate-500">Tidak ditemukan.</div>}
-                                </div>
-                            )}
-                        </>
-                    )}
+                        ))}
+                        
+                        {users.length === 0 && !loading && <div className="text-center text-slate-500 py-8">Tidak ada pemain ditemukan.</div>}
+                        
+                        {loading && <div className="text-center text-slate-500 py-4">Memuat data...</div>}
+
+                        {!loading && hasMore && (
+                            <button onClick={handleLoadMore} className="w-full py-3 mt-4 bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-600 transition border border-slate-600">
+                                View More
+                            </button>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -913,9 +1005,9 @@
                 { id: 'rocket', name: 'Rocket Crash', icon: Icons.Rocket, color: 'from-orange-600 to-red-800', desc: 'Crash Game' }
             ];
             const banners = [
-                { id: 1, title: "BONUS MEMBER BARU", desc: "Dapatkan 10.000 Chip Gratis!", color: "bg-gradient-to-r from-purple-600 to-blue-600" },
+                { id: 1, title: "BONUS MEMBER BARU", desc: "Dapatkan 50.000 Chip Gratis!", color: "bg-gradient-to-r from-purple-600 to-blue-600" },
                 { id: 2, title: "EVENT JACKPOT", desc: "Win Rate Cyber Slots Naik 20%!", color: "bg-gradient-to-r from-red-600 to-orange-600" },
-                { id: 3, title: "TOP UP HEMAT", desc: "Diskon 50% Hari Ini Saja!", color: "bg-gradient-to-r from-green-600 to-teal-600" },
+                { id: 3, title: "THE COLLECTOR", desc: "Koleksi semua avatar border!", color: "bg-gradient-to-r from-yellow-600 to-yellow-800" },
             ];
             return (
                 <div className="space-y-8 animate-fade-in">
@@ -1011,7 +1103,7 @@
             );
         }
 
-        function PatternPage() {
+        function PatternPage({ luckPercentage }) {
             const [time, setTime] = React.useState(new Date());
             React.useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
 
@@ -1023,25 +1115,56 @@
                 { name: "Rocket Crash", rtp: 98, volatility: "Extreme" },
             ];
 
-            return (
-                <div className="max-w-3xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-2">Pola Gacor Live</h2>
-                    <p className="text-xs text-slate-400 mb-6 flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Update Terakhir: {time.toLocaleTimeString()}</p>
+            const luckyHours = [
+                { time: "00:00 - 03:00", boost: "4x Luck (Malam)" },
+                { time: "12:00 - 13:00", boost: "2x Luck (Siang)" },
+                { time: "18:00 - 20:00", boost: "3x Luck (Sore)" }
+            ];
 
-                    <div className="grid gap-4">
-                        {games.map((g, i) => (
-                            <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center relative overflow-hidden">
-                                <div className="z-10">
-                                    <h3 className="font-bold text-white text-lg">{g.name}</h3>
-                                    <span className={`text-xs px-2 py-0.5 rounded border ${g.volatility === 'High' || g.volatility === 'Extreme' ? 'border-red-500 text-red-400' : 'border-blue-500 text-blue-400'}`}>{g.volatility} Volatility</span>
-                                </div>
-                                <div className="text-right z-10">
-                                    <div className="text-2xl font-bold text-green-400">{g.rtp}%</div>
-                                    <div className="text-[10px] text-slate-500">Win Rate</div>
-                                </div>
-                                <div className="absolute bottom-0 left-0 h-1 bg-green-600 transition-all duration-1000" style={{ width: `${g.rtp}%` }}></div>
+            return (
+                <div className="max-w-3xl mx-auto p-6 space-y-6">
+                    <div>
+                        <h2 className="text-2xl font-cyber text-yellow-400 mb-2">Statistik Keberuntungan</h2>
+                        <div className="bg-slate-800 p-6 rounded-xl border border-yellow-500/30 relative overflow-hidden">
+                            <div className="relative z-10">
+                                <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">Tingkat Keberuntungan Anda</p>
+                                <div className="text-4xl font-black text-white">{luckPercentage}%</div>
+                                <p className="text-xs text-slate-500 mt-2">Keberuntungan berkurang seiring pengalaman bermain (-1% tiap 50 spin).</p>
                             </div>
-                        ))}
+                            <div className="absolute right-0 top-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2"><Icons.Zap className="text-yellow-400"/> Jam Gacor (Lucky Hours)</h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            {luckyHours.map((h, i) => (
+                                <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
+                                    <div className="font-bold text-white">{h.time}</div>
+                                    <div className="text-xs text-green-400 mt-1">{h.boost}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-3">RTP Live Game</h3>
+                        <p className="text-xs text-slate-400 mb-4 flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Update Terakhir: {time.toLocaleTimeString()}</p>
+                        <div className="grid gap-4">
+                            {games.map((g, i) => (
+                                <div key={i} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center relative overflow-hidden">
+                                    <div className="z-10">
+                                        <h3 className="font-bold text-white text-lg">{g.name}</h3>
+                                        <span className={`text-xs px-2 py-0.5 rounded border ${g.volatility === 'High' || g.volatility === 'Extreme' ? 'border-red-500 text-red-400' : 'border-blue-500 text-blue-400'}`}>{g.volatility} Volatility</span>
+                                    </div>
+                                    <div className="text-right z-10">
+                                        <div className="text-2xl font-bold text-green-400">{g.rtp}%</div>
+                                        <div className="text-[10px] text-slate-500">Win Rate</div>
+                                    </div>
+                                    <div className="absolute bottom-0 left-0 h-1 bg-green-600 transition-all duration-1000" style={{ width: `${g.rtp}%` }}></div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
@@ -1175,87 +1298,6 @@
             const totalSpins = profileData.total_spins || 0; let nextLevelSpins = 50; let nextLevelName = "Rookie"; if (totalSpins >= 1000) { nextLevelSpins = 10000; nextLevelName = "Legend"; } else if (totalSpins >= 500) { nextLevelSpins = 1000; nextLevelName = "Casino King"; } else if (totalSpins >= 50) { nextLevelSpins = 500; nextLevelName = "High Roller"; } const progressPercent = Math.min(100, (totalSpins / nextLevelSpins) * 100);
             
             return (<div className="max-w-xl mx-auto p-6 relative">{isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}<h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2><div className="mb-6 p-5 bg-slate-800 rounded-xl border border-yellow-500/20 shadow-lg"><div className="flex justify-between items-end mb-2"><div><span className="text-slate-400 text-xs block mb-1 uppercase tracking-widest">Current Rank</span><div className="text-2xl font-black text-white flex items-center gap-2 italic"><Icons.Crown className="text-yellow-500 w-6 h-6"/> {profileData.title}</div></div><div className="text-right"><span className="text-yellow-400 font-bold text-sm">{totalSpins} / {nextLevelSpins}</span><span className="text-slate-500 text-[10px] block">Menuju {nextLevelName}</span></div></div><div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700"><div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div></div></div><form onSubmit={handleUpdate} className="space-y-6"><div className="flex flex-col items-center gap-4"><div onClick={()=>fileRef.current.click()} className={`w-32 h-32 rounded-full bg-slate-800 overflow-hidden cursor-pointer hover:opacity-80 relative group ${getBorderClass(profileData.avatar_border)}`}><img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/><div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div></div><input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/></div><div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div><div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div><div className="border-t border-white/10 pt-4"><button type="button" onClick={() => setShowPasswordUI(!showPasswordUI)} className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"><span className="text-sm font-bold">Ubah Password</span><div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div></button>{showPasswordUI && (<div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5"><div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div></div>)}</div><button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>{msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}</form></div>)
-        }
-        
-        function TopUpPage({ session, setWinMessage }) {
-            const [amount, setAmount] = React.useState(10000);
-            const [reason, setReason] = React.useState('');
-            const [loading, setLoading] = React.useState(false);
-            const [status, setStatus] = React.useState(''); 
-
-            const handleRequest = async (e) => {
-                e.preventDefault();
-                if(!reason) return;
-                setLoading(true);
-                
-                const { error } = await supabase.from('topup_requests').insert([{
-                    user_id: session.user.id,
-                    user_email: session.user.email,
-                    amount: amount,
-                    reason: reason
-                }]);
-
-                if (error) {
-                    alert("Gagal kirim request: " + error.message);
-                } else {
-                    setStatus('sent');
-                    setWinMessage('Request Top Up Terkirim!');
-                    setReason('');
-                }
-                setLoading(false);
-            };
-
-            if (status === 'sent') {
-                return (
-                    <div className="p-8 text-center bg-slate-800/50 rounded-xl border border-green-500/30 max-w-lg mx-auto mt-10">
-                        <div className="text-5xl mb-4">⏳</div>
-                        <h3 className="text-xl font-bold text-white mb-2">Permintaan Terkirim!</h3>
-                        <p className="text-slate-400 mb-4">Admin akan mengecek alasan Anda. Saldo akan masuk otomatis jika disetujui.</p>
-                        <button onClick={() => setStatus('')} className="px-6 py-2 bg-slate-700 rounded hover:bg-slate-600">Buat Baru</button>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="max-w-2xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Isi Saldo (Top Up)</h2>
-                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
-                        <form onSubmit={handleRequest} className="space-y-6">
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-3">Pilih Nominal</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {[10000, 25000, 50000, 100000, 500000, 1000000].map(amt => (
-                                        <button 
-                                            key={amt} 
-                                            type="button"
-                                            onClick={() => setAmount(amt)}
-                                            className={`p-4 rounded-xl border transition-all ${amount === amt ? 'bg-yellow-500 text-black border-yellow-500 font-bold ring-2 ring-yellow-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
-                                        >
-                                            {amt.toLocaleString()}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-1">Alasan Top Up</label>
-                                <textarea 
-                                    rows="3" 
-                                    value={reason} 
-                                    onChange={e => setReason(e.target.value)} 
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" 
-                                    placeholder="Contoh: Ingin mencoba pola gacor baru..." 
-                                    required 
-                                />
-                            </div>
-
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:brightness-110 transition shadow-lg">
-                                {loading ? 'MEMPROSES...' : `AJUKAN TOP UP (${amount.toLocaleString()})`}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
         }
 
         function FeedbackPage({ session }) {
@@ -1394,73 +1436,6 @@
                                         <div className="mt-2">
                                             <p className="text-xs text-slate-500 mb-1">Lampiran:</p>
                                             <img src={msg.image_url} className="max-h-48 rounded border border-slate-600" />
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        function AdminRequestsPage() {
-            const [requests, setRequests] = React.useState([]);
-            const [loading, setLoading] = React.useState(true);
-
-            const fetchRequests = async () => {
-                const { data } = await supabase.from('topup_requests').select('*').order('created_at', { ascending: false }); 
-                if (data) setRequests(data);
-                setLoading(false);
-            };
-
-            React.useEffect(() => { fetchRequests(); }, []);
-
-            const handleAction = async (req, action) => {
-                if (action === 'approve') {
-                    const { data: userData } = await supabase.from('players').select('balance').eq('id', req.user_id).single();
-                    if (userData) { await supabase.from('players').update({ balance: userData.balance + req.amount }).eq('id', req.user_id); }
-                    await supabase.from('topup_requests').update({ status: 'approved' }).eq('id', req.id);
-                } else if (action === 'reject') {
-                    await supabase.from('topup_requests').update({ status: 'rejected' }).eq('id', req.id);
-                } else if (action === 'delete') {
-                    if(confirm("Hapus data pengajuan ini?")) {
-                        await supabase.from('topup_requests').delete().eq('id', req.id);
-                    }
-                }
-                fetchRequests();
-            };
-
-            if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
-
-            return (
-                <div className="max-w-4xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Pengajuan Top Up</h2>
-                    <div className="space-y-4">
-                        {requests.length === 0 ? (<div className="text-center text-slate-500 py-10 border border-dashed border-slate-700 rounded-xl">Tidak ada data pengajuan.</div>) : (
-                            requests.map(req => (
-                                <div key={req.id} className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center relative group ${req.status === 'pending' ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-70 hover:opacity-100'}`}>
-                                    
-                                    <button onClick={() => handleAction(req, 'delete')} className="absolute top-2 right-2 text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition">
-                                        <Icons.Trash />
-                                    </button>
-
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className={`font-bold text-lg ${req.status === 'approved' ? 'text-green-500' : req.status === 'rejected' ? 'text-red-500' : 'text-yellow-400'}`}>
-                                                {req.status === 'approved' ? '✓ ' : req.status === 'rejected' ? '✕ ' : '+ '}{req.amount.toLocaleString()}
-                                            </span>
-                                            <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">{req.user_email}</span>
-                                            {req.status !== 'pending' && <span className="text-[10px] uppercase border border-slate-600 px-1 rounded text-slate-500">{req.status}</span>}
-                                        </div>
-                                        <p className="text-sm text-slate-300 italic">"{req.reason}"</p>
-                                        <span className="text-[10px] text-slate-500">{new Date(req.created_at).toLocaleString()}</span>
-                                    </div>
-                                    
-                                    {req.status === 'pending' && (
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <button onClick={() => handleAction(req, 'reject')} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded hover:bg-red-900/50 transition text-sm font-bold">TOLAK</button>
-                                            <button onClick={() => handleAction(req, 'approve')} className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 transition text-sm font-bold shadow-lg">TERIMA (ACC)</button>
                                         </div>
                                     )}
                                 </div>
@@ -1610,9 +1585,10 @@
                         }); 
                     }
                     else if (error && error.code === 'PGRST116') {
-                        const initData = { id: session.user.id, balance: 10000, full_name: session.user.user_metadata?.full_name || 'Member', avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}`, role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default', inventory: ['default'] };
+                        // FIX: Set balance awal jadi 50000
+                        const initData = { id: session.user.id, balance: 50000, full_name: session.user.user_metadata?.full_name || 'Member', avatar_url: `https://api.dicebear.com/9.x/dylan/svg?seed=${session.user.email}`, role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default', inventory: ['default'] };
                         await supabase.from('players').insert([initData]);
-                        setBalance(10000); setProfileData(initData);
+                        setBalance(50000); setProfileData(initData);
                     }
                 } catch(e) {}
             };
@@ -1638,22 +1614,47 @@
                 await supabase.from('players').update(updates).eq('id', session.user.id); 
             };
             
+            const getBorderClass = (id) => {
+                if(id === 'neon-blue') return 'border-neon-blue';
+                if(id === 'neon-pink') return 'border-neon-pink';
+                if(id === 'gold-king') return 'border-gold-king';
+                if(id === 'rainbow') return 'border-rainbow';
+                return 'border-2 border-yellow-500';
+            };
+
+            // Luck Logic: 80% start, -1% per 50 spins, min 10%
+            const baseLuck = 80;
+            const decay = Math.floor((profileData.total_spins || 0) / 50);
+            const luckPercentage = Math.max(10, baseLuck - decay);
+            
             const renderContent = () => {
                 let content = null;
                 if (view === 'profile') content = <ProfilePage session={session} profileData={profileData} refreshProfile={loadUserData} />;
-                else if (view === 'topup') content = <TopUpPage session={session} setWinMessage={setWinMessage} />;
+                // Removed topup content
                 else if (view === 'info') content = <InfoPage />;
-                else if (view === 'pola') content = <div className="p-6"><h2 className="text-2xl text-yellow-400 mb-4">Pola Gacor</h2><div className="bg-slate-800 p-4 rounded border border-green-500/30 text-green-400">Pola Pagi: Auto 20x - Winrate 80%</div></div>;
+                else if (view === 'pola') content = <PatternPage luckPercentage={luckPercentage} />;
                 else if (view === 'feedback') content = <FeedbackPage session={session} />;
                 else if (view === 'shop') content = <ShopPage session={session} balance={balance} updateBalance={updateBalance} profileData={profileData} refreshProfile={loadUserData} />;
                 else if (view === 'inbox') content = <InboxPage profileData={profileData} />; 
-                else if (view === 'requests') content = <AdminRequestsPage />;
+                // Removed requests page content logic
                 else if (view === 'game') {
                     if (!activeGame) content = <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} />;
                     else {
+                        const info = GAME_INFO[activeGame];
                         content = (
-                            <div className="flex flex-col items-center mt-8">
+                            <div className="flex flex-col items-center mt-8 max-w-2xl mx-auto w-full">
                                 <button onClick={() => { setActiveGame(null); setWinMessage("Pilih Game"); }} className="mb-6 px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white flex items-center gap-2 transition-colors shadow-md border border-white/5"><Icons.ArrowLeft /> KEMBALI KE LOBBY</button>
+                                
+                                {/* Game Info Section */}
+                                <div className="w-full bg-slate-800/80 p-4 rounded-xl border border-blue-500/30 mb-6 text-left">
+                                    <h4 className="text-blue-400 font-bold font-cyber mb-2 flex items-center gap-2"><Icons.Info className="w-4 h-4"/> {info.title}</h4>
+                                    <p className="text-xs text-slate-300 mb-2 leading-relaxed">{info.desc}</p>
+                                    <div className="flex flex-col sm:flex-row gap-2 text-[10px] mt-2 pt-2 border-t border-white/10">
+                                        <span className="bg-green-900/30 text-green-400 px-2 py-1 rounded border border-green-900/50">🎯 Win: {info.win}</span>
+                                        <span className="bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded border border-yellow-900/50">🍀 Luck Effect: {info.luck}</span>
+                                    </div>
+                                </div>
+
                                 {activeGame === 'slot' && <GameSlots balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 {activeGame === 'wheel' && <GameWheel balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 {activeGame === 'highlow' && <GameHighLow balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
@@ -1663,7 +1664,9 @@
                             </div>
                         );
                     }
-                } else { content = <Lobby setGame={(g) => { setActiveGame(g); setView('game'); }} />; }
+                } 
+                else if (view === 'search') content = <SearchUserPage session={session} />;
+                else { content = <Lobby setGame={(g) => { setActiveGame(g); setView('game'); }} />; }
                 return content;
             };
 
@@ -1682,8 +1685,9 @@
                             </div>
                         </div>
                         <nav className="flex-1 p-4 space-y-1">
-                            {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'search', l:'Cari Pemain', i:Icons.Search}, {id:'topup',l:'Top Up',i:Icons.CreditCard},{id:'shop',l:'Avatar Shop',i:Icons.ShoppingBag},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
-                            {profileData.role === 'admin' && (<><div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div><button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}><Icons.Inbox /> Inbox</button><button onClick={() => setView('requests')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-green-500/30 mt-1 ${view === 'requests' ? 'bg-green-900/30 text-green-400 font-bold' : 'text-green-600 hover:bg-green-900/10'}`}><Icons.FileText /> Pengajuan</button></>)}<div className="my-4 border-t border-white/5"></div><button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button></nav><div className="p-4"><button onClick={onLogout} className="w-full flex gap-2 p-2 text-red-400 hover:bg-red-900/20 rounded"><Icons.LogOut/> Keluar</button></div></aside><main className="flex-1 h-screen overflow-y-auto flex flex-col"><header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10"><div className="md:hidden font-cyber text-yellow-500">ROYAL</div><div className="flex-1"></div><div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div></header><div className="p-4 md:p-8 flex-1">{renderContent()}</div><div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3"><button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button><button onClick={()=>setView('topup')} className="text-slate-400"><Icons.CreditCard/></button><button onClick={()=>setView('shop')} className="text-slate-400"><Icons.ShoppingBag/></button>{profileData.role === 'admin' && <button onClick={()=>setView('requests')} className="text-green-500"><Icons.FileText/></button>}<button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button></div></main><GlobalChat session={session} profileData={profileData} /></div>);
+                            {/* Removed topup from navigation */}
+                            {[{id:'lobby',l:'Lobby Game',i:Icons.Home},{id:'search', l:'Cari Pemain', i:Icons.Search},{id:'shop',l:'Avatar Shop',i:Icons.ShoppingBag},{id:'pola',l:'Pola Gacor',i:Icons.Zap},{id:'info',l:'Info App',i:Icons.Info},{id:'feedback',l:'Feedback',i:Icons.Message}].map(m=>(<button key={m.id} onClick={()=>{setView(m.id==='lobby'?'game':m.id); if(m.id==='lobby')setActiveGame(null)}} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view===m.id||(view==='game'&&m.id==='lobby')?'bg-yellow-500 text-black font-bold':'text-slate-400 hover:bg-white/5'}`}><m.i/>{m.l}</button>))}
+                            {profileData.role === 'admin' && (<><div className="pt-4 pb-2 text-[10px] font-bold text-slate-500 px-3">ADMIN AREA</div><button onClick={() => setView('inbox')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition border border-yellow-500/30 ${view === 'inbox' ? 'bg-yellow-900/30 text-yellow-400 font-bold' : 'text-yellow-600 hover:bg-yellow-900/10'}`}><Icons.Inbox /> Inbox</button></>)}<div className="my-4 border-t border-white/5"></div><button onClick={() => setView('profile')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${view === 'profile' ? 'bg-yellow-500 text-black font-bold' : 'text-slate-400 hover:bg-white/5'}`}><Icons.Settings /> Profile</button></nav><div className="p-4"><button onClick={onLogout} className="w-full flex gap-2 p-2 text-red-400 hover:bg-red-900/20 rounded"><Icons.LogOut/> Keluar</button></div></aside><main className="flex-1 h-screen overflow-y-auto flex flex-col"><header className="h-16 bg-slate-900/80 backdrop-blur border-b border-white/5 flex justify-between items-center px-4 sticky top-0 z-10"><div className="md:hidden font-cyber text-yellow-500">ROYAL</div><div className="flex-1"></div><div className="px-4 py-1.5 bg-black/40 rounded-full border border-yellow-500/30 flex gap-2 items-center"><span className="text-[10px] text-slate-400">SALDO</span><span className="font-bold text-yellow-400">{balance.toLocaleString()}</span></div></header><div className="p-4 md:p-8 flex-1">{renderContent()}</div><div className="md:hidden bg-slate-900 border-t border-white/5 flex justify-around p-3"><button onClick={()=>{setView('game');setActiveGame(null)}} className="text-slate-400"><Icons.Home/></button><button onClick={()=>setView('shop')} className="text-slate-400"><Icons.ShoppingBag/></button><button onClick={()=>setView('search')} className="text-slate-400"><Icons.Search/></button><button onClick={()=>setView('profile')} className="text-slate-400"><Icons.Settings/></button></div></main><GlobalChat session={session} profileData={profileData} /></div>);
         }
 
         function App() {
