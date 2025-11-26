@@ -76,6 +76,8 @@
         @keyframes crown-shine { 0% { filter: drop-shadow(0 0 2px gold); } 50% { filter: drop-shadow(0 0 15px yellow); } 100% { filter: drop-shadow(0 0 2px gold); } }
         @keyframes crown-fire { 0% { filter: drop-shadow(0 0 2px red); } 50% { filter: drop-shadow(0 0 15px orange); } 100% { filter: drop-shadow(0 0 2px red); } }
         @keyframes crown-ice { 0% { filter: drop-shadow(0 0 2px cyan); } 50% { filter: drop-shadow(0 0 15px blue); } 100% { filter: drop-shadow(0 0 2px cyan); } }
+        @keyframes crown-rainbow { 0% { filter: drop-shadow(0 0 2px violet); } 50% { filter: drop-shadow(0 0 15px cyan); } 100% { filter: drop-shadow(0 0 2px violet); } }
+        @keyframes crown-glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
 
         /* Border Classes */
         .border-neon-blue { border: 3px solid #3b82f6; box-shadow: 0 0 10px #3b82f6, inset 0 0 5px #3b82f6; }
@@ -113,13 +115,16 @@
         .crown-anim-shine { animation: crown-shine 2s infinite; color: #ffd700; }
         .crown-anim-fire { animation: crown-fire 1.5s infinite; color: #ef4444; }
         .crown-anim-ice { animation: crown-ice 3s infinite; color: #06b6d4; }
-        .crown-anim-rainbow { animation: spin-slow 5s linear infinite; color: #d946ef; filter: hue-rotate(90deg); }
-        .crown-anim-glitch { animation: glitch-border 0.2s infinite; color: #22c55e; }
+        .crown-anim-rainbow { animation: crown-rainbow 5s linear infinite; color: #d946ef; filter: hue-rotate(90deg); }
+        .crown-anim-glitch { animation: crown-glitch 0.2s infinite; color: #22c55e; }
 
         /* Minigame Styles */
         .bird-target { animation: float-bird 3s linear infinite; cursor: crosshair; }
         @keyframes float-bird { 0% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-20px) translateX(10px); } 50% { transform: translateY(0) translateX(0); } 75% { transform: translateY(20px) translateX(-10px); } 100% { transform: translateY(0) translateX(0); } }
         .hacker-mole { transition: top 0.1s; }
+        
+        /* Race Track */
+        .race-track { background: repeating-linear-gradient(90deg, #334155 0px, #334155 50px, #1e293b 50px, #1e293b 100px); }
     </style>
 </head>
 <body>
@@ -134,6 +139,7 @@
             set: (key, val) => localStorage.setItem(key, JSON.stringify(val))
         };
 
+        // --- FIX: MOCK CLIENT YANG LEBIH KUAT & SUPPORT CHAINING ---
         class MockSupabaseClient {
             constructor() { console.warn("Mode Offline Aktif"); }
             get auth() { 
@@ -206,18 +212,46 @@
             Rocket: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>,
             Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
             Skull: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>,
-            Pickaxe: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 13l-3 3"/><path d="M9 16l-2 2"/><path d="M15 10l2-2"/></svg>
+            Pickaxe: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 13l-3 3"/><path d="M9 16l-2 2"/><path d="M15 10l2-2"/></svg>,
+            Horse: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 4c-5 0-7 4-7 4l-2.5-1.5 2.5 5.5-4 2.5-5-2-2 3 1.5 1.5 10 3 6-4 2-4 2-4-2-4z"/><path d="M16 14v7"/><path d="M12 14v4"/><path d="M8 13v4"/></svg>,
+            Football: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 12l4-2.5"/><path d="M12 12l-4-2.5"/><path d="M12 12v4.5"/><path d="M16 9.5l2.5-2.5"/><path d="M8 9.5l-2.5-2.5"/><path d="M12 16.5l3 3"/><path d="M12 16.5l-3 3"/></svg>
         };
 
         // --- BORDER CATALOG ---
         const BORDER_CATALOG = [
             { id: 'default', name: 'Default', price: 0, class: 'border-2 border-yellow-500' },
             { id: 'solid-red', name: 'Red Basic', price: 1000, class: 'border-solid-red' },
+            { id: 'solid-green', name: 'Green Basic', price: 1000, class: 'border-solid-green' },
+            { id: 'solid-blue', name: 'Blue Basic', price: 1000, class: 'border-solid-blue' },
+            { id: 'solid-purple', name: 'Purple Basic', price: 1000, class: 'border-solid-purple' },
+            { id: 'solid-cyan', name: 'Cyan Basic', price: 1000, class: 'border-solid-cyan' },
+            { id: 'solid-orange', name: 'Orange Basic', price: 1000, class: 'border-solid-orange' },
+            { id: 'solid-pink', name: 'Pink Basic', price: 1000, class: 'border-solid-pink' },
+            { id: 'solid-white', name: 'Clean White', price: 2000, class: 'border-solid-white' },
+            { id: 'solid-gray', name: 'Steel Gray', price: 2000, class: 'border-solid-gray' },
             { id: 'neon-blue', name: 'Neon Blue', price: 10000, class: 'border-neon-blue' },
+            { id: 'neon-pink', name: 'Neon Pink', price: 10000, class: 'border-neon-pink' },
+            { id: 'neon-green', name: 'Neon Green', price: 10000, class: 'border-2 border-green-400 shadow-[0_0_10px_#4ade80]' },
+            { id: 'neon-red', name: 'Neon Red', price: 10000, class: 'border-2 border-red-500 shadow-[0_0_10px_#ef4444]' },
+            { id: 'neon-purple', name: 'Neon Purple', price: 12000, class: 'border-2 border-purple-500 shadow-[0_0_10px_#a855f7]' },
             { id: 'grad-sunset', name: 'Sunset', price: 25000, class: 'p-1 bg-gradient-to-br from-orange-500 to-purple-600' },
+            { id: 'grad-ocean', name: 'Ocean Depth', price: 25000, class: 'p-1 bg-gradient-to-br from-blue-400 to-blue-900' },
+            { id: 'grad-forest', name: 'Mystic Forest', price: 25000, class: 'p-1 bg-gradient-to-br from-green-400 to-emerald-900' },
+            { id: 'grad-love', name: 'Love Potion', price: 25000, class: 'p-1 bg-gradient-to-br from-pink-400 to-red-600' },
+            { id: 'grad-gold', name: 'Liquid Gold', price: 30000, class: 'p-1 bg-gradient-to-b from-yellow-300 via-yellow-500 to-yellow-700' },
+            { id: 'grad-silver', name: 'Silver Lining', price: 30000, class: 'p-1 bg-gradient-to-b from-slate-300 via-slate-100 to-slate-400' },
+            { id: 'anim-pulse-red', name: 'Red Pulse', price: 50000, class: 'border-2 border-red-500 animate-pulse' },
             { id: 'anim-pulse-gold', name: 'Gold Pulse', price: 55000, class: 'border-2 border-yellow-400 animate-pulse' },
+            { id: 'anim-spin-dash', name: 'Dashed Spin', price: 60000, class: 'border-dashed-anim' },
+            { id: 'anim-double', name: 'Double Ring', price: 65000, class: 'border-double-ring' },
             { id: 'glow-fire', name: 'Fire Aura', price: 75000, class: 'border-fire' },
+            { id: 'glow-ice', name: 'Ice Aura', price: 75000, class: 'border-ice' },
+            { id: 'rgb-flow', name: 'RGB Gamer', price: 80000, class: 'border-rgb-flow' },
+            { id: 'glitch', name: 'Cyber Glitch', price: 90000, class: 'border-glitch' },
             { id: 'matrix', name: 'The Matrix', price: 95000, class: 'border-matrix' },
+            { id: 'gold-king', name: 'Gold King', price: 100000, class: 'border-gold-king' },
+            { id: 'gold-shimmer', name: 'Royal Shimmer', price: 120000, class: 'border-gold-shimmer' },
+            { id: 'plasma', name: 'Plasma Coil', price: 150000, class: 'border-plasma' },
             { id: 'rainbow', name: 'Rainbow', price: 500000, class: 'border-rainbow' },
             { id: 'collector', name: 'The Collector', price: 999999, class: 'border-collector' },
         ];
@@ -253,14 +287,16 @@
             wheel: { title: "Cara Main: Neon Wheel", desc: "Pertaruhkan chip dan putar roda. Hindari ZONK, cari pengali x10!", win: "Berhenti di Multiplier.", luck: "Ilusi ZONK lebih kecil." },
             highlow: { title: "Cara Main: Code Breaker", desc: "Tebak angka berikutnya LEBIH BESAR atau KECIL dari sekarang (1-13).", win: "Tebakan benar x2.", luck: "Hint probabilitas." },
             dice: { title: "Cara Main: Cosmic Dice", desc: "Prediksi total 2 dadu: Rendah (2-6), Tujuh (7), Tinggi (8-12).", win: "Tebakan benar. 7 bayar x5.", luck: "Dadu favorit." },
-            rocket: { title: "Cara Main: Rocket Crash", desc: "Roket terbang, pengali naik. Tekan AMBIL sebelum meledak!", win: "Cashout sebelum Crash.", luck: "Roket terbang lebih lama." }
+            rocket: { title: "Cara Main: Rocket Crash", desc: "Roket terbang, pengali naik. Tekan AMBIL sebelum meledak!", win: "Cashout sebelum Crash.", luck: "Roket terbang lebih lama." },
+            horse: { title: "Cara Main: Derby Raja", desc: "Balapan kuda virtual! Pilih satu dari 5 kuda jagoan. Jika kudamu finish pertama, kamu menang besar.", win: "Juara 1 (x10).", luck: "Boost kecepatan acak." },
+            soccer: { title: "Cara Main: Liga Juara", desc: "Simulasi turnamen sepak bola Eropa. Pilih tim favoritmu dari 16 besar. Jika timmu juara turnamen, jackpot menanti!", win: "Juara Turnamen (x20).", luck: "Tim lebih jago penalti." }
         };
         
         const EVENT_DESCRIPTIONS = {
             hunt: {
                 title: "CYBER HUNT: Misi Penembak Jitu",
                 story: "Halo Gamers! Siap jadi penembak jitu? Di game Cyber Hunt ini, tugas kamu gampang banget tapi butuh ketelitian super. Kamu bakal melihat drone-drone nakal atau burung cyber yang beterbangan liar di layar kamu. Jangan biarkan mereka lolos!",
-                how: "Tugas kamu adalah menembak mereka alias 'tap' targetnya sebanyak-banyaknya! Setiap kali kamu berhasil menembak satu target, kamu bakal dapet 50 Credit tunai langsung! Ingat, waktunya cuma 60 detik, jadi jangan sampai meleng ya. Arahkan jarimu, fokus, dan DOR! Kumpulkan uang sebanyak-banyaknya buat modal main slot nanti. Semangat!",
+                how: "Tugas kamu adalah menembak mereka alias 'tap' targetnya sebanyak-banyaknya! Setiap kali kamu berhasil menembak satu target, kamu bakal dapet 50 Credit tunai langsung! Ingat, waktunya cuma 30 detik, jadi jangan sampai meleng ya. Arahkan jarimu, fokus, dan DOR! Kumpulkan uang sebanyak-banyaknya buat modal main slot nanti. Semangat!",
             },
             hacker: {
                 title: "FIREWALL DEFENDER: Gepuk Hacker",
@@ -270,7 +306,7 @@
             miner: {
                 title: "DATA MINER: Klik Cepat Cuan Kilat",
                 story: "Lagi butuh uang gampang tanpa mikir keras? Nah, Data Miner ini jawabannya! Di sini kamu gak perlu strategi, cuma perlu jari yang super cepat dan kuat. Anggap aja kamu lagi nambang data berharga di tambang digital.",
-                how: "Caranya gampang banget! KLIK atau TAP tombol petir besar di tengah layar secepat kilat! Semakin cepat kamu nge-klik, semakin banyak data yang kamu tambang, dan tentunya semakin banyak Credit yang mengalir ke kantongmu. Setiap klik bernilai 5 Credit. Kalau jarimu sakti, kamu bisa panen ribuan credit dalam 1 menit! Siapkan jarimu, tarik napas, dan mulai mining sekarang!",
+                how: "Caranya gampang banget! KLIK atau TAP tombol petir besar di tengah layar secepat kilat! Semakin cepat kamu nge-klik, semakin banyak data yang kamu tambang, dan tentunya semakin banyak Credit yang mengalir ke kantongmu. Setiap klik bernilai 5 Credit. Kalau jarimu sakti, kamu bisa panen ribuan credit dalam 30 Detik! Siapkan jarimu, tarik napas, dan mulai mining sekarang!",
             }
         };
 
@@ -312,6 +348,13 @@
         }
 
         // --- COMPONENTS ---
+        function GameAds() {
+            const ads = ["https://picsum.photos/seed/ad1/400/150","https://picsum.photos/seed/ad2/400/150","https://picsum.photos/seed/ad3/400/150"];
+            const [currentAd, setCurrentAd] = React.useState(0);
+            React.useEffect(() => { const timer = setInterval(() => { setCurrentAd((prev) => (prev + 1) % ads.length); }, 5000); return () => clearInterval(timer); }, []);
+            return (<div className="mt-6 w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-lg border border-white/10 relative h-24 sm:h-32 bg-slate-800">{ads.map((ad, index) => (<img key={index} src={ad} alt={`Iklan ${index + 1}`} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentAd ? 'opacity-100' : 'opacity-0'}`} />))}<div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">IKLAN</div></div>);
+        }
+
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -400,13 +443,6 @@
                     </div>
                 </div>
             );
-        }
-
-        function GameAds() {
-            const ads = ["https://picsum.photos/seed/ad1/400/150","https://picsum.photos/seed/ad2/400/150","https://picsum.photos/seed/ad3/400/150"];
-            const [currentAd, setCurrentAd] = React.useState(0);
-            React.useEffect(() => { const timer = setInterval(() => { setCurrentAd((prev) => (prev + 1) % ads.length); }, 5000); return () => clearInterval(timer); }, []);
-            return (<div className="mt-6 w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-lg border border-white/10 relative h-24 sm:h-32 bg-slate-800">{ads.map((ad, index) => (<img key={index} src={ad} alt={`Iklan ${index + 1}`} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentAd ? 'opacity-100' : 'opacity-0'}`} />))}<div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">IKLAN</div></div>);
         }
 
         function GameSlots({ balance, updateBalance, setWinMessage }) {
@@ -506,7 +542,410 @@
             return (<div className="text-center p-8 bg-slate-900/80 rounded-3xl border border-orange-500/30 max-w-md mx-auto shadow-[0_0_30px_rgba(249,115,22,0.2)]"><h3 className="text-orange-400 font-cyber text-2xl mb-6 tracking-wider">ROCKET CRASH</h3><div className="h-40 flex items-center justify-center mb-4 relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">{crashed ? <div className="text-red-500 text-4xl font-black animate-pulse">CRASHED!</div> : <div className={`text-5xl font-bold ${cashedOut ? 'text-green-400' : 'text-white'} ${isFlying ? 'rocket-anim' : ''}`}>{multiplier.toFixed(2)}x</div>}{isFlying && !crashed && <div className="absolute bottom-4"><Icons.Zap className="w-6 h-6 text-orange-500 animate-bounce"/></div>}</div><BetControl bet={bet} setBet={setBet} balance={balance} />{isFlying && !crashed && !cashedOut ? (<button onClick={cashOut} className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl shadow-lg text-xl">AMBIL {Math.floor(bet * multiplier).toLocaleString()}</button>) : (<button onClick={startGame} disabled={isFlying} className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-lg disabled:opacity-50">LUNCURKAN</button>)}</div>);
         }
 
-        // --- SEARCH PAGE FIXED ---
+        function GameHorseRace({ balance, updateBalance, setWinMessage }) {
+            const [bet, setBet] = React.useState(200);
+            const [selectedHorse, setSelectedHorse] = React.useState(null);
+            const [raceStatus, setRaceStatus] = React.useState('idle'); 
+            const [positions, setPositions] = React.useState([0,0,0,0,0]);
+            const [winner, setWinner] = React.useState(null);
+            const [commentary, setCommentary] = React.useState("Pilih kuda jagoanmu!");
+            
+            const horses = [
+                { id: 0, name: "Thunder Bolt", color: "bg-red-500" },
+                { id: 1, name: "Shadow Run", color: "bg-blue-500" },
+                { id: 2, name: "Golden Boy", color: "bg-yellow-500" },
+                { id: 3, name: "Wind Walker", color: "bg-green-500" },
+                { id: 4, name: "Dark Knight", color: "bg-purple-500" }
+            ];
+
+            const startRace = () => {
+                if (balance < bet) return setWinMessage("Saldo Kurang!");
+                if (selectedHorse === null) return setWinMessage("Pilih Kuda Dulu!");
+                
+                updateBalance(balance - bet);
+                setRaceStatus('racing');
+                setPositions([0,0,0,0,0]);
+                setWinner(null);
+                setCommentary("Dan mereka mulai berlari!");
+
+                const interval = setInterval(() => {
+                    setPositions(prev => {
+                        const newPos = prev.map(p => p + Math.random() * 3 + 0.5);
+                        const winningIndex = newPos.findIndex(p => p >= 90);
+                        if (winningIndex !== -1) {
+                            clearInterval(interval);
+                            finishRace(winningIndex);
+                        }
+                        
+                        // Random commentary
+                        if(Math.random() > 0.8) {
+                            const leader = newPos.indexOf(Math.max(...newPos));
+                            setCommentary(`${horses[leader].name} memimpin di depan!`);
+                        }
+                        
+                        return newPos;
+                    });
+                }, 100);
+            };
+
+            const finishRace = (winnerIdx) => {
+                setRaceStatus('finished');
+                setPositions(prev => {
+                    const final = [...prev];
+                    final[winnerIdx] = 100; // Finish line
+                    return final;
+                });
+                setWinner(winnerIdx);
+
+                if (winnerIdx === selectedHorse) {
+                    const win = bet * 10;
+                    updateBalance(balance - bet + win, true);
+                    setWinMessage(`MENANG! +${win.toLocaleString()}`);
+                    setCommentary(`LUAR BIASA! ${horses[winnerIdx].name} Juara!`);
+                } else {
+                    setWinMessage(`Kalah -${bet.toLocaleString()}`);
+                    setCommentary(`Sayang sekali, ${horses[winnerIdx].name} yang menang.`);
+                }
+                
+                setTimeout(() => setRaceStatus('idle'), 4000);
+            };
+
+            return (
+                <div className="w-full max-w-2xl mx-auto bg-slate-900/80 p-6 rounded-3xl border border-green-800 shadow-2xl">
+                    <h3 className="text-green-400 font-cyber text-2xl mb-4 tracking-wider text-center">DERBY RAJA</h3>
+                    <div className="bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 relative overflow-hidden race-track">
+                         <div className="absolute right-10 top-0 bottom-0 w-1 bg-white/30 dashed"></div> {/* Finish Line */}
+                         {horses.map((h, i) => (
+                             <div key={i} className="mb-4 last:mb-0 relative h-8">
+                                 <div className="absolute top-0 left-0 w-full h-full flex items-center px-2">
+                                     <div className="w-full h-0.5 bg-slate-600"></div>
+                                 </div>
+                                 <div 
+                                     className={`absolute top-0 h-8 w-8 rounded-full ${h.color} flex items-center justify-center text-xs font-bold text-white shadow-lg transition-all duration-100 border-2 border-white`}
+                                     style={{ left: `${Math.min(positions[i], 92)}%` }}
+                                 >
+                                     <Icons.Horse className="w-5 h-5" />
+                                 </div>
+                             </div>
+                         ))}
+                    </div>
+
+                    <div className="text-center mb-6 h-8 text-yellow-400 font-bold animate-pulse">{commentary}</div>
+
+                    {/* Betting Controls */}
+                    <div className={`transition-opacity duration-500 ${raceStatus !== 'idle' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                        <div className="grid grid-cols-5 gap-2 mb-4">
+                            {horses.map((h, i) => (
+                                <button 
+                                    key={i} 
+                                    onClick={() => setSelectedHorse(i)}
+                                    className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${selectedHorse === i ? 'border-yellow-400 bg-slate-700 scale-105' : 'border-transparent bg-slate-800 hover:bg-slate-700'}`}
+                                >
+                                    <div className={`w-8 h-8 rounded-full ${h.color} flex items-center justify-center text-white`}><Icons.Horse /></div>
+                                    <span className="text-[10px] font-bold truncate w-full text-center">{h.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <BetControl bet={bet} setBet={setBet} balance={balance} />
+                        <button onClick={startRace} disabled={raceStatus !== 'idle'} className="w-full py-4 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl font-black font-cyber text-white shadow-lg hover:scale-105 transition">
+                            {raceStatus === 'idle' ? 'MULAI BALAPAN' : 'BALAPAN SEDANG BERLANGSUNG...'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function GameSoccer({ balance, updateBalance, setWinMessage }) {
+            const [bet, setBet] = React.useState(500);
+            const [selectedTeam, setSelectedTeam] = React.useState(null);
+            const [matchStatus, setMatchStatus] = React.useState('idle'); // idle, playing, finished
+            const [currentRound, setCurrentRound] = React.useState(null); // 16, 8, 4, 2 (Final)
+            const [matchLog, setMatchLog] = React.useState([]);
+            
+            // 16 Teams with simplified "Strength"
+            const teams = [
+                { id: 1, name: "Real Madrid", str: 90 }, { id: 2, name: "Man City", str: 89 },
+                { id: 3, name: "Bayern Munich", str: 88 }, { id: 4, name: "Liverpool", str: 87 },
+                { id: 5, name: "PSG", str: 86 }, { id: 6, name: "Barcelona", str: 86 },
+                { id: 7, name: "Inter Milan", str: 85 }, { id: 8, name: "Arsenal", str: 85 },
+                { id: 9, name: "Dortmund", str: 82 }, { id: 10, name: "Atletico", str: 83 },
+                { id: 11, name: "Juventus", str: 82 }, { id: 12, name: "AC Milan", str: 81 },
+                { id: 13, name: "Leverkusen", str: 84 }, { id: 14, name: "Benfica", str: 79 },
+                { id: 15, name: "Ajax", str: 78 }, { id: 16, name: "Porto", str: 78 }
+            ];
+
+            const simulateMatch = (teamA, teamB) => {
+                // Simple probability based on strength
+                const totalStr = teamA.str + teamB.str;
+                const chanceA = teamA.str / totalStr;
+                const winner = Math.random() < chanceA ? teamA : teamB;
+                const loser = winner === teamA ? teamB : teamA;
+                const scoreW = Math.floor(Math.random() * 3) + 1;
+                const scoreL = Math.floor(Math.random() * scoreW);
+                return { winner, loser, score: `${winner.name} ${scoreW} - ${scoreL} ${loser.name}` };
+            };
+
+            const startTournament = async () => {
+                if (balance < bet) return setWinMessage("Saldo Kurang!");
+                if (!selectedTeam) return setWinMessage("Pilih Tim Jagoan!");
+
+                updateBalance(balance - bet);
+                setMatchStatus('playing');
+                setMatchLog([]);
+                
+                let currentPool = [...teams];
+                const myTeam = teams.find(t => t.id === selectedTeam);
+                
+                // Simulate Rounds
+                const rounds = ["Babak 16 Besar", "Perempat Final", "Semi Final", "GRAND FINAL"];
+                
+                for (let r = 0; r < rounds.length; r++) {
+                    setCurrentRound(rounds[r]);
+                    let nextPool = [];
+                    let roundLog = [];
+                    
+                    // Check if my team is still in
+                    const myTeamIn = currentPool.find(t => t.id === myTeam.id);
+                    if (!myTeamIn) {
+                        setMatchLog(prev => [...prev, "Tim anda telah GUGUR!"]);
+                        break; // Stop simulation if user lost
+                    }
+
+                    await new Promise(res => setTimeout(res, 1500)); // Suspense delay
+
+                    // Shuffle pool for random matchups
+                    currentPool.sort(() => Math.random() - 0.5);
+
+                    for (let i = 0; i < currentPool.length; i += 2) {
+                        const result = simulateMatch(currentPool[i], currentPool[i+1]);
+                        nextPool.push(result.winner);
+                        
+                        // Add to log if it involves user team or is semi/final
+                        if (result.winner.id === myTeam.id || result.loser.id === myTeam.id || r >= 2) {
+                             setMatchLog(prev => [...prev, `${rounds[r]}: ${result.score}`]);
+                        }
+                    }
+                    currentPool = nextPool;
+                }
+
+                // Check Final Result
+                setMatchStatus('finished');
+                if (currentPool[0].id === myTeam.id) {
+                    const win = bet * 20;
+                    updateBalance(balance - bet + win, true);
+                    setWinMessage(`JUARA! +${win.toLocaleString()}`);
+                    setMatchLog(prev => [...prev, `🏆 ${myTeam.name} ADALAH JUARA EROPA! 🏆`]);
+                } else {
+                    setWinMessage(`Kalah -${bet.toLocaleString()}`);
+                    const winner = currentPool[0] ? currentPool[0].name : "Lawan";
+                     setMatchLog(prev => [...prev, `Juara Turnamen: ${winner}`]);
+                }
+            };
+
+            return (
+                <div className="w-full max-w-2xl mx-auto bg-slate-900/80 p-6 rounded-3xl border border-blue-800 shadow-2xl">
+                    <h3 className="text-blue-400 font-cyber text-2xl mb-4 tracking-wider text-center">LIGA JUARA EROPA</h3>
+                    
+                    <div className="text-center mb-6 bg-black/30 p-3 rounded-lg border border-white/10 text-xs text-slate-300">
+                        <p>Selamat datang di Liga Juara Eropa! Di sini, 16 tim terbaik benua biru akan bertanding memperebutkan trofi paling bergengsi. Anda hanya perlu memilih SATU tim yang menurut Anda akan menjadi juara. Tim dengan reputasi besar memiliki statistik lebih kuat, tapi bola itu bundar! Jika tim pilihan Anda berhasil mengangkat piala di akhir turnamen, uang Anda akan dikalikan <strong>20 KALI LIPAT</strong>!</p>
+                    </div>
+
+                    {/* Stadium Screen */}
+                    <div className="bg-black p-4 rounded-xl mb-6 border-4 border-slate-700 h-48 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('https://img.freepik.com/free-vector/soccer-stadium-with-illumination_1284-16528.jpg')] bg-cover opacity-20"></div>
+                        
+                        {matchStatus === 'idle' && <div className="z-10 text-slate-400 text-center">Pilih Tim & Mulai Turnamen<br/><span className="text-yellow-500 text-xs">Hadiah Juara x20</span></div>}
+                        
+                        {matchStatus === 'playing' && (
+                            <div className="z-10 text-center w-full">
+                                <div className="text-yellow-400 font-bold text-sm mb-2 animate-pulse">{currentRound}</div>
+                                <div className="space-y-1 w-full px-4">
+                                    {matchLog.slice(-3).map((log, i) => (
+                                        <div key={i} className="text-white text-xs bg-black/50 p-1 rounded animate-fade-in">{log}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {matchStatus === 'finished' && (
+                            <div className="z-10 text-center">
+                                <div className="text-2xl font-bold text-white mb-2">TURNAMEN SELESAI</div>
+                                <div className="text-yellow-400 font-cyber">{matchLog[matchLog.length-1]}</div>
+                                <button onClick={() => setMatchStatus('idle')} className="mt-4 px-4 py-1 bg-blue-600 rounded text-xs">Reset</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Team Selection */}
+                    <div className={`transition-opacity duration-500 ${matchStatus !== 'idle' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                        <div className="grid grid-cols-4 gap-2 mb-4 max-h-40 overflow-y-auto pr-1">
+                            {teams.map((t) => (
+                                <button 
+                                    key={t.id} 
+                                    onClick={() => setSelectedTeam(t.id)}
+                                    className={`p-2 rounded border text-xs font-bold transition-all ${selectedTeam === t.id ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    {t.name}
+                                </button>
+                            ))}
+                        </div>
+                        <BetControl bet={bet} setBet={setBet} balance={balance} />
+                        <button onClick={startTournament} className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl font-black font-cyber text-white shadow-lg hover:scale-105 transition">
+                            MULAI TURNAMEN
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- MINIGAME EVENTS (30s & Claim System) ---
+        function MinigameResult({ score, multiplier, onClaim }) {
+            const total = score * multiplier;
+            return (
+                <div className="absolute inset-0 z-20 bg-slate-900/95 flex flex-col items-center justify-center animate-fade-in p-6 text-center">
+                    <h2 className="text-3xl font-black text-yellow-400 mb-2">MISI SELESAI!</h2>
+                    <div className="text-slate-400 mb-6">Skor Akhir: <span className="text-white font-bold">{score}</span></div>
+                    <div className="bg-slate-800 p-6 rounded-2xl border-2 border-yellow-500/50 mb-8 w-full max-w-sm">
+                        <div className="text-sm text-slate-400 uppercase mb-1">Total Hadiah</div>
+                        <div className="text-4xl font-black text-green-400 animate-pulse">+{total.toLocaleString()}</div>
+                        <div className="text-xs text-slate-500 mt-1">Credit</div>
+                    </div>
+                    <button onClick={() => onClaim(total)} className="w-full max-w-sm py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg text-xl hover:scale-105 transition-transform">
+                        KLAIM HADIAH
+                    </button>
+                </div>
+            );
+        }
+
+        function EventBirdShooter({ onFinish }) {
+            const [score, setScore] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(30); 
+            const [birds, setBirds] = React.useState([]);
+            const [isFinished, setIsFinished] = React.useState(false);
+
+            React.useEffect(() => {
+                if(isFinished) return;
+                const timer = setInterval(() => setTimeLeft(t => {
+                    if (t <= 1) { clearInterval(timer); setIsFinished(true); return 0; }
+                    return t - 1;
+                }), 1000);
+                
+                const spawner = setInterval(() => {
+                    if (Math.random() > 0.3) {
+                        const id = Date.now() + Math.random();
+                        const top = Math.random() * 80 + 10;
+                        const speed = Math.random() * 3 + 2;
+                        setBirds(prev => [...prev, { id, top, left: -10, speed }]);
+                    }
+                }, 800);
+
+                const mover = setInterval(() => {
+                    setBirds(prev => prev.map(b => ({ ...b, left: b.left + b.speed })).filter(b => b.left < 110));
+                }, 50);
+
+                return () => { clearInterval(timer); clearInterval(spawner); clearInterval(mover); };
+            }, [isFinished]);
+
+            const shoot = (id) => {
+                setBirds(prev => prev.filter(b => b.id !== id));
+                setScore(s => s + 1);
+            };
+
+            return (
+                <div className="relative w-full h-[400px] bg-slate-900 rounded-xl overflow-hidden border-2 border-blue-500 cursor-crosshair select-none animate-fade-in">
+                    {isFinished ? <MinigameResult score={score} multiplier={50} onClaim={onFinish} /> : (
+                        <>
+                            <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded text-white font-bold z-10">Waktu: {timeLeft}s</div>
+                            <div className="absolute top-4 right-4 bg-black/50 px-4 py-2 rounded text-yellow-400 font-bold z-10">Skor: {score} (Rp {score * 50})</div>
+                            {birds.map(bird => (
+                                <div key={bird.id} onMouseDown={() => shoot(bird.id)} className="absolute w-10 h-10 text-red-500 bird-target transition-transform active:scale-150" style={{ top: `${bird.top}%`, left: `${bird.left}%` }}>
+                                    <Icons.Target />
+                                </div>
+                            ))}
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-700/20 font-black text-6xl">CYBER HUNT</div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        function EventWhackAHacker({ onFinish }) {
+            const [score, setScore] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(30); 
+            const [activeHole, setActiveHole] = React.useState(null);
+            const [isFinished, setIsFinished] = React.useState(false);
+
+            React.useEffect(() => {
+                if(isFinished) return;
+                const timer = setInterval(() => setTimeLeft(t => {
+                    if (t <= 1) { clearInterval(timer); setIsFinished(true); return 0; }
+                    return t - 1;
+                }), 1000);
+                
+                const popup = setInterval(() => {
+                    setActiveHole(Math.floor(Math.random() * 9));
+                    setTimeout(() => setActiveHole(null), 800);
+                }, 1000);
+                return () => { clearInterval(timer); clearInterval(popup); };
+            }, [isFinished]);
+
+            return (
+                <div className="w-full bg-slate-900 p-4 rounded-xl border-2 border-red-500 select-none animate-fade-in h-[400px] relative">
+                     {isFinished ? <MinigameResult score={score} multiplier={30} onClaim={onFinish} /> : (
+                        <>
+                            <div className="flex justify-between mb-8 text-white font-bold">
+                                <span>Waktu: {timeLeft}s</span>
+                                <span className="text-green-400">Dapat: {score * 30}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                {[...Array(9)].map((_, i) => (
+                                    <div key={i} className="aspect-square bg-slate-800 rounded-full border-4 border-slate-700 relative overflow-hidden flex items-center justify-center cursor-pointer active:bg-slate-700" 
+                                        onClick={() => { if (activeHole === i) { setScore(s => s + 1); setActiveHole(null); } }}>
+                                        {activeHole === i && <div className="text-red-500 animate-bounce"><Icons.Skull className="w-12 h-12"/></div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                     )}
+                </div>
+            );
+        }
+
+        function EventCryptoMiner({ onFinish }) {
+            const [clicks, setClicks] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(30);
+            const [isFinished, setIsFinished] = React.useState(false);
+
+            React.useEffect(() => {
+                if(isFinished) return;
+                const timer = setInterval(() => setTimeLeft(t => {
+                    if (t <= 1) { clearInterval(timer); setIsFinished(true); return 0; }
+                    return t - 1;
+                }), 1000);
+                return () => clearInterval(timer);
+            }, [isFinished]);
+
+            return (
+                <div className="w-full h-[400px] bg-slate-900 rounded-xl border-2 border-green-500 flex flex-col items-center justify-center relative select-none animate-fade-in">
+                    {isFinished ? <MinigameResult score={clicks} multiplier={5} onClaim={onFinish} /> : (
+                        <>
+                            <div className="absolute top-4 left-4 text-white font-bold">Waktu: {timeLeft}s</div>
+                            <div className="text-6xl font-black text-green-500 mb-4 animate-pulse">{clicks}</div>
+                            <div className="text-sm text-slate-400 mb-8">Total: {clicks * 5} Credits</div>
+                            <button 
+                                onMouseDown={() => setClicks(c => c + 1)}
+                                className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-800 shadow-[0_0_30px_#22c55e] flex items-center justify-center active:scale-90 transition-transform"
+                            >
+                                <Icons.Zap className="w-16 h-16 text-white" />
+                            </button>
+                            <p className="mt-4 text-slate-300 animate-bounce">KLIK CEPAT!</p>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // --- SEARCH PAGE ---
         function SearchUserPage({ session }) {
             const [query, setQuery] = React.useState('');
             const [users, setUsers] = React.useState([]);
@@ -522,17 +961,14 @@
                 const from = currentPage * PAGE_SIZE;
                 const to = from + PAGE_SIZE - 1;
 
-                // 1. Create base query builder
                 let dbQuery = supabase
                     .from('players')
                     .select('id, full_name, avatar_url, title, avatar_border, total_spins, created_at');
 
-                // 2. Apply filter IF exists
                 if (query) {
                     dbQuery = dbQuery.ilike('full_name', `%${query}%`);
                 }
 
-                // 3. Apply order and pagination
                 const { data, error } = await dbQuery
                     .order('created_at', { ascending: false })
                     .range(from, to);
@@ -600,7 +1036,9 @@
                 { id: 'wheel', name: 'Neon Wheel', icon: Icons.Disc, color: 'from-blue-600 to-purple-600', desc: 'Roulette' },
                 { id: 'highlow', name: 'Code Breaker', icon: Icons.TrendingUp, color: 'from-green-600 to-emerald-800', desc: 'High/Low' },
                 { id: 'dice', name: 'Cosmic Dice', icon: Icons.Dices, color: 'from-indigo-600 to-violet-800', desc: 'Dice Roll' },
-                { id: 'rocket', name: 'Rocket Crash', icon: Icons.Rocket, color: 'from-orange-600 to-red-800', desc: 'Crash Game' }
+                { id: 'rocket', name: 'Rocket Crash', icon: Icons.Rocket, color: 'from-orange-600 to-red-800', desc: 'Crash Game' },
+                { id: 'horse', name: 'Derby Raja', icon: Icons.Horse, color: 'from-yellow-600 to-orange-700', desc: 'Balapan Kuda' },
+                { id: 'soccer', name: 'Liga Juara', icon: Icons.Football, color: 'from-blue-600 to-indigo-800', desc: 'Judi Bola' }
             ];
             
             // Flashy Event Banners
@@ -653,118 +1091,7 @@
             );
         }
 
-        function EventBirdShooter({ onFinish }) {
-            const [score, setScore] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60); 
-            const [birds, setBirds] = React.useState([]);
-            const gameAreaRef = React.useRef(null);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                const spawner = setInterval(() => {
-                    if (Math.random() > 0.3) {
-                        const id = Date.now() + Math.random();
-                        const top = Math.random() * 80 + 10;
-                        const speed = Math.random() * 3 + 2;
-                        setBirds(prev => [...prev, { id, top, left: -10, speed }]);
-                    }
-                }, 800);
-
-                const mover = setInterval(() => {
-                    setBirds(prev => prev.map(b => ({ ...b, left: b.left + b.speed })).filter(b => b.left < 110));
-                }, 50);
-
-                return () => { clearInterval(timer); clearInterval(spawner); clearInterval(mover); };
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(score * 50);
-            }, [timeLeft]);
-
-            const shoot = (id) => {
-                setBirds(prev => prev.filter(b => b.id !== id));
-                setScore(s => s + 1);
-            };
-
-            return (
-                <div className="relative w-full h-[400px] bg-slate-900 rounded-xl overflow-hidden border-2 border-blue-500 cursor-crosshair select-none animate-fade-in">
-                    <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded text-white font-bold z-10">Waktu: {timeLeft}s</div>
-                    <div className="absolute top-4 right-4 bg-black/50 px-4 py-2 rounded text-yellow-400 font-bold z-10">Skor: {score} (Rp {score * 50})</div>
-                    {birds.map(bird => (
-                        <div key={bird.id} onMouseDown={() => shoot(bird.id)} className="absolute w-10 h-10 text-red-500 bird-target transition-transform active:scale-150" style={{ top: `${bird.top}%`, left: `${bird.left}%` }}>
-                            <Icons.Target />
-                        </div>
-                    ))}
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-700/20 font-black text-6xl">CYBER HUNT</div>
-                </div>
-            );
-        }
-
-        function EventWhackAHacker({ onFinish }) {
-            const [score, setScore] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60);
-            const [activeHole, setActiveHole] = React.useState(null);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                const popup = setInterval(() => {
-                    setActiveHole(Math.floor(Math.random() * 9));
-                    setTimeout(() => setActiveHole(null), 800);
-                }, 1000);
-                return () => { clearInterval(timer); clearInterval(popup); };
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(score * 30);
-            }, [timeLeft]);
-
-            return (
-                <div className="w-full bg-slate-900 p-4 rounded-xl border-2 border-red-500 select-none animate-fade-in">
-                    <div className="flex justify-between mb-4 text-white font-bold">
-                        <span>Waktu: {timeLeft}s</span>
-                        <span className="text-green-400">Dapat: {score * 30}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                        {[...Array(9)].map((_, i) => (
-                            <div key={i} className="aspect-square bg-slate-800 rounded-full border-4 border-slate-700 relative overflow-hidden flex items-center justify-center cursor-pointer active:bg-slate-700" 
-                                 onClick={() => { if (activeHole === i) { setScore(s => s + 1); setActiveHole(null); } }}>
-                                {activeHole === i && <div className="text-red-500 animate-bounce"><Icons.Skull className="w-12 h-12"/></div>}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        function EventCryptoMiner({ onFinish }) {
-            const [clicks, setClicks] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(clicks * 5);
-            }, [timeLeft]);
-
-            return (
-                <div className="w-full h-[400px] bg-slate-900 rounded-xl border-2 border-green-500 flex flex-col items-center justify-center relative select-none animate-fade-in">
-                    <div className="absolute top-4 left-4 text-white font-bold">Waktu: {timeLeft}s</div>
-                    <div className="text-6xl font-black text-green-500 mb-4 animate-pulse">{clicks}</div>
-                    <div className="text-sm text-slate-400 mb-8">Total: {clicks * 5} Credits</div>
-                    <button 
-                        onMouseDown={() => setClicks(c => c + 1)}
-                        className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-800 shadow-[0_0_30px_#22c55e] flex items-center justify-center active:scale-90 transition-transform"
-                    >
-                        <Icons.Zap className="w-16 h-16 text-white" />
-                    </button>
-                    <p className="mt-4 text-slate-300 animate-bounce">KLIK CEPAT!</p>
-                </div>
-            );
-        }
-
+        // --- INFO PAGE ---
         function InfoPage() {
             const [expanded, setExpanded] = React.useState(null);
             const faqs = [
@@ -822,6 +1149,7 @@
             );
         }
 
+        // --- PATTERN PAGE ---
         function PatternPage({ luckPercentage }) {
             const [time, setTime] = React.useState(new Date());
             React.useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
@@ -889,6 +1217,7 @@
             );
         }
 
+        // --- SHOP PAGE ---
         function ShopPage({ session, balance, updateBalance, profileData, refreshProfile }) {
             const [loading, setLoading] = React.useState(false);
             const [ownedItems, setOwnedItems] = React.useState([]);
@@ -910,7 +1239,6 @@
                 const newBalance = balance - item.price;
                 let newInventory = [...ownedItems, item.id];
 
-                // Check for Collector Achievement
                 const buyableItems = BORDER_CATALOG.filter(b => b.id !== 'default' && b.id !== 'collector');
                 const ownedBuyable = buyableItems.filter(b => newInventory.includes(b.id));
                 
@@ -1010,161 +1338,7 @@
             );
         }
 
-        function ProfilePage({session,profileData,refreshProfile}){
-            const [email, setEmail] = React.useState(session.user.email); const [password, setPassword] = React.useState(''); const [fullName, setFullName] = React.useState(profileData?.full_name || ''); const [avatarUrl, setAvatarUrl] = React.useState(profileData?.avatar_url || ''); const [msg, setMsg] = React.useState(''); const [isCropping, setIsCropping] = React.useState(false); const [tempImg, setTempImg] = React.useState(null); const [showPasswordUI, setShowPasswordUI] = React.useState(false); const [oldPassword, setOldPassword] = React.useState(''); const [newPassword, setNewPassword] = React.useState(''); const [confirmPassword, setConfirmPassword] = React.useState(''); const fileRef = React.useRef(null);
-            const handleImageChange = (e) => { if(e.target.files[0]){ if (e.target.files[0].size > 5 * 1024 * 1024) return alert("Maks 5MB"); const r = new FileReader(); r.onload = () => { setTempImg(r.result); setIsCropping(true); }; r.readAsDataURL(e.target.files[0]); } e.target.value = null; };
-            const handleUpdate = async (e) => { e.preventDefault(); setMsg('Menyimpan...'); const { error: dbError } = await supabase.from('players').update({ full_name: fullName, avatar_url: avatarUrl }).eq('id', session.user.id); if (dbError) { setMsg("Gagal update profil."); return; } if (showPasswordUI) { if (!oldPassword || !newPassword || !confirmPassword) { setMsg("Isi semua kolom password."); return; } if (newPassword !== confirmPassword) { setMsg("Konfirmasi password tidak cocok."); return; } if (newPassword.length < 6) { setMsg("Password minimal 6 karakter."); return; } const { error: verifyError } = await supabase.auth.signInWithPassword({ email: session.user.email, password: oldPassword }); if (verifyError) { setMsg("Password lama salah!"); return; } const { error: updatePassError } = await supabase.auth.updateUser({ password: newPassword }); if (updatePassError) { setMsg("Gagal update password."); return; } setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setShowPasswordUI(false); } setMsg("Berhasil disimpan!"); refreshProfile(); };
-            const totalSpins = profileData.total_spins || 0; let nextLevelSpins = 50; let nextLevelName = "Rookie"; if (totalSpins >= 1000) { nextLevelSpins = 10000; nextLevelName = "Legend"; } else if (totalSpins >= 500) { nextLevelSpins = 1000; nextLevelName = "Casino King"; } else if (totalSpins >= 50) { nextLevelSpins = 500; nextLevelName = "High Roller"; } const progressPercent = Math.min(100, (totalSpins / nextLevelSpins) * 100);
-            
-            return (<div className="max-w-xl mx-auto p-6 relative">{isCropping && <ImageCropper imageSrc={tempImg} onCancel={()=>setIsCropping(false)} onCrop={(res)=>{setAvatarUrl(res); setIsCropping(false);}} />}<h2 className="text-2xl font-cyber text-yellow-400 mb-6">Edit Profile</h2><div className="mb-6 p-5 bg-slate-800 rounded-xl border border-yellow-500/20 shadow-lg"><div className="flex justify-between items-end mb-2"><div><span className="text-slate-400 text-xs block mb-1 uppercase tracking-widest">Current Rank</span><div className="text-2xl font-black text-white flex items-center gap-2 italic"><Icons.Crown className="text-yellow-500 w-6 h-6"/> {profileData.title}</div></div><div className="text-right"><span className="text-yellow-400 font-bold text-sm">{totalSpins} / {nextLevelSpins}</span><span className="text-slate-500 text-[10px] block">Menuju {nextLevelName}</span></div></div><div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700"><div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div></div></div><form onSubmit={handleUpdate} className="space-y-6"><div className="flex flex-col items-center gap-4"><div onClick={()=>fileRef.current.click()} className={`w-32 h-32 rounded-full bg-slate-800 overflow-hidden cursor-pointer hover:opacity-80 relative group ${getBorderClass(profileData.avatar_border)}`}><img src={avatarUrl || `https://api.dicebear.com/9.x/dylan/svg?seed=${fullName}`} className="w-full h-full object-cover"/><div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><Icons.Edit/></div></div><input type="file" ref={fileRef} onChange={handleImageChange} className="hidden" accept="image/*"/></div><div><label className="text-xs text-slate-400">Nama</label><input value={fullName} onChange={e=>setFullName(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500"/></div><div><label className="text-xs text-slate-400">Email</label><input value={email} disabled className="w-full bg-slate-900/50 p-3 rounded text-slate-400 border border-slate-800 cursor-not-allowed"/></div><div className="border-t border-white/10 pt-4"><button type="button" onClick={() => setShowPasswordUI(!showPasswordUI)} className="flex items-center justify-between w-full p-3 bg-slate-800 rounded text-white border border-slate-700 hover:border-yellow-500 transition-colors"><span className="text-sm font-bold">Ubah Password</span><div className={`transform transition-transform duration-200 ${showPasswordUI ? 'rotate-180' : ''}`}><Icons.ArrowDown /></div></button>{showPasswordUI && (<div className="mt-4 space-y-3 animate-fade-in p-4 bg-slate-900/50 rounded-lg border border-white/5"><div><label className="text-xs text-slate-400">Password Lama</label><input type="password" value={oldPassword} onChange={e=>setOldPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Password Baru</label><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div><div><label className="text-xs text-slate-400">Konfirmasi Password Baru</label><input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className="w-full bg-slate-800 p-3 rounded text-white border border-slate-700 outline-none focus:border-yellow-500" placeholder="********"/></div></div>)}</div><button className="w-full py-3 bg-yellow-500 text-black font-bold rounded shadow-lg hover:bg-yellow-400">SIMPAN PERUBAHAN</button>{msg && <p className="text-center text-yellow-400 text-sm animate-pulse">{msg}</p>}</form></div>)
-        }
-
-        function FeedbackPage({ session }) {
-            const [title, setTitle] = React.useState('');
-            const [desc, setDesc] = React.useState('');
-            const [image, setImage] = React.useState(null); 
-            const [isSent, setIsSent] = React.useState(false);
-            const [loading, setLoading] = React.useState(false);
-            const fileRef = React.useRef(null);
-
-            const handleImage = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                     if (file.size > 3 * 1024 * 1024) return alert("Maks 3MB");
-                     const reader = new FileReader();
-                     reader.onload = () => setImage(reader.result);
-                     reader.readAsDataURL(file);
-                }
-            };
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if(!title || !desc) return;
-                setLoading(true);
-                
-                const { error } = await supabase.from('feedback').insert([{
-                    user_id: session.user.id,
-                    user_email: session.user.email,
-                    title: title,
-                    message: desc,
-                    image_url: image
-                }]);
-
-                if (error) {
-                    alert("Gagal kirim feedback: " + error.message);
-                } else {
-                    setIsSent(true);
-                    setTimeout(() => {
-                        setTitle(''); setDesc(''); setImage(null); setIsSent(false);
-                    }, 2000);
-                }
-                setLoading(false);
-            };
-
-            return (
-                <div className="max-w-2xl mx-auto p-6">
-                    <h2 className="text-2xl font-cyber text-yellow-400 mb-6 border-b border-white/10 pb-4">Kirim Feedback</h2>
-                    <div className="bg-slate-800/50 p-6 rounded-xl border border-white/10">
-                        {isSent ? (
-                            <div className="text-center py-10">
-                                <div className="text-4xl mb-2">✅</div>
-                                <h3 className="text-xl font-bold text-white">Terima Kasih!</h3>
-                                <p className="text-slate-400">Masukan Anda telah kami terima.</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Judul Laporan</label>
-                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Bug pada tombol spin" required />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Deskripsi Detail</label>
-                                    <textarea rows="4" value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-yellow-500 outline-none" placeholder="Jelaskan masalah atau saran Anda..." required />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1">Lampirkan Gambar (Opsional)</label>
-                                    <div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-yellow-500/50 transition-colors cursor-pointer relative overflow-hidden">
-                                        {image ? (
-                                            <img src={image} className="h-32 mx-auto object-contain" />
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2 text-slate-500">
-                                                <Icons.Image /><span className="text-xs">Klik untuk upload screenshot (Max 3MB)</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input type="file" ref={fileRef} onChange={handleImage} className="hidden" accept="image/*" />
-                                    {image && <button type="button" onClick={() => setImage(null)} className="text-xs text-red-400 mt-2 underline">Hapus Gambar</button>}
-                                </div>
-                                <button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg transition-colors">
-                                    {loading ? 'MENGIRIM...' : 'KIRIM FEEDBACK'}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        function InboxPage({ profileData }) {
-            const [messages, setMessages] = React.useState([]);
-            const [loading, setLoading] = React.useState(true);
-
-            const fetchMessages = async () => {
-                const { data } = await supabase.from('feedback').select('*').order('created_at', { ascending: false });
-                if (data) setMessages(data);
-                setLoading(false);
-            };
-
-            React.useEffect(() => { fetchMessages(); }, []);
-
-            const handleDelete = async (id) => {
-                if(confirm("Hapus pesan ini?")) {
-                    await supabase.from('feedback').delete().eq('id', id);
-                    setMessages(prev => prev.filter(m => m.id !== id));
-                }
-            };
-
-            if (loading) return <div className="p-8 text-center text-slate-500">Memuat pesan...</div>;
-
-            return (
-                <div className="max-w-4xl mx-auto p-6">
-                    <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                        <h2 className="text-2xl font-cyber text-yellow-400">Inbox {profileData.role === 'admin' ? 'Admin' : 'Saya'}</h2>
-                    </div>
-                    <div className="space-y-4">
-                        {messages.length === 0 ? (
-                            <div className="text-center text-slate-500 py-10">Belum ada pesan masuk.</div>
-                        ) : (
-                            messages.map(msg => (
-                                <div key={msg.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-slate-500 transition relative group">
-                                    {profileData.role === 'admin' && (
-                                        <button onClick={() => handleDelete(msg.id)} className="absolute top-3 right-3 p-2 bg-slate-900 rounded-full text-slate-500 hover:text-red-500 hover:bg-white transition opacity-0 group-hover:opacity-100">
-                                            <Icons.Trash />
-                                        </button>
-                                    )}
-
-                                    <div className="flex justify-between items-start mb-2 pr-8">
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg">{msg.title}</h3>
-                                            <p className="text-xs text-yellow-500">Dari: {msg.user_email}</p>
-                                        </div>
-                                        <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{msg.message}</p>
-                                    {msg.image_url && (
-                                        <div className="mt-2">
-                                            <p className="text-xs text-slate-500 mb-1">Lampiran:</p>
-                                            <img src={msg.image_url} className="max-h-48 rounded border border-slate-600" />
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
+        // --- GLOBAL CHAT ---
         function GlobalChat({ session, profileData }) {
             const [isOpen, setIsOpen] = React.useState(false);
             const [message, setMessage] = React.useState('');
@@ -1422,6 +1596,8 @@
                                 {activeGame === 'highlow' && <GameHighLow balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 {activeGame === 'dice' && <GameDice balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 {activeGame === 'rocket' && <GameRocket balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
+                                {activeGame === 'horse' && <GameHorseRace balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
+                                {activeGame === 'soccer' && <GameSoccer balance={balance} updateBalance={updateBalance} setWinMessage={setWinMessage} />}
                                 <GameAds />
                             </div>
                         );
