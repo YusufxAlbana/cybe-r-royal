@@ -62,7 +62,7 @@
         @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .chat-bubble { animation: slide-up 0.3s ease-out; }
 
-        /* === NEW BORDER ANIMATIONS === */
+        /* === NEW BORDER & CROWN ANIMATIONS === */
         @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes spin-fast { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes border-pulse { 0% { border-color: #ff0000; box-shadow: 0 0 5px #ff0000; } 50% { border-color: #ffaa00; box-shadow: 0 0 20px #ffaa00; } 100% { border-color: #ff0000; box-shadow: 0 0 5px #ff0000; } }
@@ -72,6 +72,10 @@
         @keyframes ice-glow { 0% { box-shadow: 0 0 5px #00ffff, inset 0 0 5px #00ffff; border-color: #00ffff; } 50% { box-shadow: 0 0 20px #e0ffff, inset 0 0 10px #e0ffff; border-color: #e0ffff; } 100% { box-shadow: 0 0 5px #00ffff, inset 0 0 5px #00ffff; border-color: #00ffff; } }
         @keyframes matrix-pulse { 0% { border-color: #0f0; box-shadow: 0 0 5px #0f0; } 100% { border-color: #003300; box-shadow: 0 0 2px #0f0; } }
         @keyframes gold-shimmer { 0% { border-color: #ffd700; box-shadow: 0 0 5px #ffd700; } 50% { border-color: #ffec8b; box-shadow: 0 0 25px #ffd700; } 100% { border-color: #ffd700; box-shadow: 0 0 5px #ffd700; } }
+        @keyframes crown-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+        @keyframes crown-shine { 0% { filter: drop-shadow(0 0 2px gold); } 50% { filter: drop-shadow(0 0 15px yellow); } 100% { filter: drop-shadow(0 0 2px gold); } }
+        @keyframes crown-fire { 0% { filter: drop-shadow(0 0 2px red); } 50% { filter: drop-shadow(0 0 15px orange); } 100% { filter: drop-shadow(0 0 2px red); } }
+        @keyframes crown-ice { 0% { filter: drop-shadow(0 0 2px cyan); } 50% { filter: drop-shadow(0 0 15px blue); } 100% { filter: drop-shadow(0 0 2px cyan); } }
 
         /* Border Classes */
         .border-neon-blue { border: 3px solid #3b82f6; box-shadow: 0 0 10px #3b82f6, inset 0 0 5px #3b82f6; }
@@ -103,6 +107,15 @@
         .border-solid-white { border: 3px solid #ffffff; }
         .border-solid-gray { border: 3px solid #64748b; }
 
+        /* Crown Effects */
+        .crown-wrapper { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; }
+        .crown-anim-default { animation: crown-float 3s ease-in-out infinite; color: #fbbf24; filter: drop-shadow(0 0 2px #000); }
+        .crown-anim-shine { animation: crown-shine 2s infinite; color: #ffd700; }
+        .crown-anim-fire { animation: crown-fire 1.5s infinite; color: #ef4444; }
+        .crown-anim-ice { animation: crown-ice 3s infinite; color: #06b6d4; }
+        .crown-anim-rainbow { animation: spin-slow 5s linear infinite; color: #d946ef; filter: hue-rotate(90deg); }
+        .crown-anim-glitch { animation: glitch-border 0.2s infinite; color: #22c55e; }
+
         /* Minigame Styles */
         .bird-target { animation: float-bird 3s linear infinite; cursor: crosshair; }
         @keyframes float-bird { 0% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-20px) translateX(10px); } 50% { transform: translateY(0) translateX(0); } 75% { transform: translateY(20px) translateX(-10px); } 100% { transform: translateY(0) translateX(0); } }
@@ -121,7 +134,6 @@
             set: (key, val) => localStorage.setItem(key, JSON.stringify(val))
         };
 
-        // --- FIX: MOCK CLIENT YANG LEBIH KUAT & SUPPORT CHAINING ---
         class MockSupabaseClient {
             constructor() { console.warn("Mode Offline Aktif"); }
             get auth() { 
@@ -135,7 +147,6 @@
                 }; 
             }
             from(table) {
-                // Builder pattern untuk mendukung chaining seperti .select().order().range()
                 const builder = {
                     select: () => builder,
                     eq: () => builder,
@@ -144,7 +155,6 @@
                     ilike: () => builder,
                     range: () => builder,
                     single: async () => ({ data: null, error: 'Offline Mode: Data unavailable' }),
-                    // Support 'await' dengan mengembalikan data kosong saat di-resolve
                     then: (resolve) => resolve({ data: [], error: null }), 
                     insert: async () => ({ error: null }),
                     update: async () => ({ error: 'Offline', eq: () => ({}) }),
@@ -199,7 +209,7 @@
             Pickaxe: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 13l-3 3"/><path d="M9 16l-2 2"/><path d="M15 10l2-2"/></svg>
         };
 
-        // --- BORDER CATALOG (Reduced for brevity, full list in real app) ---
+        // --- BORDER CATALOG ---
         const BORDER_CATALOG = [
             { id: 'default', name: 'Default', price: 0, class: 'border-2 border-yellow-500' },
             { id: 'solid-red', name: 'Red Basic', price: 1000, class: 'border-solid-red' },
@@ -211,11 +221,32 @@
             { id: 'rainbow', name: 'Rainbow', price: 500000, class: 'border-rainbow' },
             { id: 'collector', name: 'The Collector', price: 999999, class: 'border-collector' },
         ];
+        
+        // --- CROWN CATALOG ---
+        const CROWN_CATALOG = Array.from({ length: 30 }, (_, i) => {
+            const id = i + 1;
+            let styleClass = "crown-anim-default";
+            let name = `Crown MK-${id}`;
+            let price = 1000000 + (i * 100000);
+            
+            if (id > 5) styleClass = "crown-anim-shine";
+            if (id > 10) styleClass = "crown-anim-fire";
+            if (id > 15) styleClass = "crown-anim-ice";
+            if (id > 20) styleClass = "crown-anim-rainbow";
+            if (id > 25) styleClass = "crown-anim-glitch";
+            
+            return { id: `crown-${id}`, name: name, price: price, class: styleClass };
+        });
 
         const getBorderClass = (id) => {
             const item = BORDER_CATALOG.find(b => b.id === id);
             return item ? item.class : 'border-2 border-yellow-500';
         };
+        
+        const getCrownClass = (id) => {
+            const item = CROWN_CATALOG.find(c => c.id === id);
+            return item ? item.class : 'hidden';
+        }
 
         const GAME_INFO = {
             slot: { title: "Cara Main: Cyber Slots", desc: "Putar gulungan. Cocokkan simbol di baris tengah. 'Z' (Petir) bayaran tertinggi!", win: "3-5 simbol sama.", luck: "Meningkatkan peluang Wild." },
@@ -223,6 +254,24 @@
             highlow: { title: "Cara Main: Code Breaker", desc: "Tebak angka berikutnya LEBIH BESAR atau KECIL dari sekarang (1-13).", win: "Tebakan benar x2.", luck: "Hint probabilitas." },
             dice: { title: "Cara Main: Cosmic Dice", desc: "Prediksi total 2 dadu: Rendah (2-6), Tujuh (7), Tinggi (8-12).", win: "Tebakan benar. 7 bayar x5.", luck: "Dadu favorit." },
             rocket: { title: "Cara Main: Rocket Crash", desc: "Roket terbang, pengali naik. Tekan AMBIL sebelum meledak!", win: "Cashout sebelum Crash.", luck: "Roket terbang lebih lama." }
+        };
+        
+        const EVENT_DESCRIPTIONS = {
+            hunt: {
+                title: "CYBER HUNT: Misi Penembak Jitu",
+                story: "Halo Gamers! Siap jadi penembak jitu? Di game Cyber Hunt ini, tugas kamu gampang banget tapi butuh ketelitian super. Kamu bakal melihat drone-drone nakal atau burung cyber yang beterbangan liar di layar kamu. Jangan biarkan mereka lolos!",
+                how: "Tugas kamu adalah menembak mereka alias 'tap' targetnya sebanyak-banyaknya! Setiap kali kamu berhasil menembak satu target, kamu bakal dapet 50 Credit tunai langsung! Ingat, waktunya cuma 60 detik, jadi jangan sampai meleng ya. Arahkan jarimu, fokus, dan DOR! Kumpulkan uang sebanyak-banyaknya buat modal main slot nanti. Semangat!",
+            },
+            hacker: {
+                title: "FIREWALL DEFENDER: Gepuk Hacker",
+                story: "Waduh gawat! Sistem keamanan kita lagi diserang sama hacker-hacker iseng nih! Mereka mencoba masuk lewat celah-celah firewall. Kamu adalah benteng terakhir kami. Kamu harus bantuin kita buat gepuk mereka balik ke asalnya.",
+                how: "Game ini simpel banget, mirip main pukul tikus tanah di timezone. Nanti bakal muncul kepala-kepala hacker dari lubang persembunyiannya secara acak. Tugas kamu cuma satu: PUKUL MEREKA! Cepat-cepat tekan kepalanya sebelum mereka sembunyi lagi. Setiap pukulan yang kena, kamu dapet 30 Credit. Lumayan banget kan buat nambah-nambah saldo? Yuk, amankan sistem kita dan jadi kaya raya!",
+            },
+            miner: {
+                title: "DATA MINER: Klik Cepat Cuan Kilat",
+                story: "Lagi butuh uang gampang tanpa mikir keras? Nah, Data Miner ini jawabannya! Di sini kamu gak perlu strategi, cuma perlu jari yang super cepat dan kuat. Anggap aja kamu lagi nambang data berharga di tambang digital.",
+                how: "Caranya gampang banget! KLIK atau TAP tombol petir besar di tengah layar secepat kilat! Semakin cepat kamu nge-klik, semakin banyak data yang kamu tambang, dan tentunya semakin banyak Credit yang mengalir ke kantongmu. Setiap klik bernilai 5 Credit. Kalau jarimu sakti, kamu bisa panen ribuan credit dalam 1 menit! Siapkan jarimu, tarik napas, dan mulai mining sekarang!",
+            }
         };
 
         // --- UTILS ---
@@ -262,122 +311,7 @@
             );
         }
 
-        // --- MINIGAMES EVENTS ---
-        function EventBirdShooter({ onFinish }) {
-            const [score, setScore] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60);
-            const [birds, setBirds] = React.useState([]);
-            const gameAreaRef = React.useRef(null);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                const spawner = setInterval(() => {
-                    if (Math.random() > 0.3) {
-                        const id = Date.now() + Math.random();
-                        const top = Math.random() * 80 + 10; // 10% - 90%
-                        const speed = Math.random() * 3 + 2;
-                        setBirds(prev => [...prev, { id, top, left: -10, speed }]);
-                    }
-                }, 800);
-
-                const mover = setInterval(() => {
-                    setBirds(prev => prev.map(b => ({ ...b, left: b.left + b.speed })).filter(b => b.left < 110));
-                }, 50);
-
-                return () => { clearInterval(timer); clearInterval(spawner); clearInterval(mover); };
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(score * 50);
-            }, [timeLeft]);
-
-            const shoot = (id) => {
-                setBirds(prev => prev.filter(b => b.id !== id));
-                setScore(s => s + 1);
-                // Play sound effect here if needed
-            };
-
-            return (
-                <div className="relative w-full h-[400px] bg-slate-900 rounded-xl overflow-hidden border-2 border-blue-500 cursor-crosshair select-none">
-                    <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded text-white font-bold z-10">Waktu: {timeLeft}s</div>
-                    <div className="absolute top-4 right-4 bg-black/50 px-4 py-2 rounded text-yellow-400 font-bold z-10">Skor: {score} (Rp {score * 50})</div>
-                    {birds.map(bird => (
-                        <div key={bird.id} onMouseDown={() => shoot(bird.id)} className="absolute w-10 h-10 text-red-500 bird-target transition-transform active:scale-150" style={{ top: `${bird.top}%`, left: `${bird.left}%` }}>
-                            <Icons.Target />
-                        </div>
-                    ))}
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-700/20 font-black text-6xl">CYBER HUNT</div>
-                </div>
-            );
-        }
-
-        function EventWhackAHacker({ onFinish }) {
-            const [score, setScore] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60);
-            const [activeHole, setActiveHole] = React.useState(null);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                const popup = setInterval(() => {
-                    setActiveHole(Math.floor(Math.random() * 9));
-                    setTimeout(() => setActiveHole(null), 800);
-                }, 1000);
-                return () => { clearInterval(timer); clearInterval(popup); };
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(score * 30);
-            }, [timeLeft]);
-
-            return (
-                <div className="w-full bg-slate-900 p-4 rounded-xl border-2 border-red-500 select-none">
-                    <div className="flex justify-between mb-4 text-white font-bold">
-                        <span>Waktu: {timeLeft}s</span>
-                        <span className="text-green-400">Dapat: {score * 30}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                        {[...Array(9)].map((_, i) => (
-                            <div key={i} className="aspect-square bg-slate-800 rounded-full border-4 border-slate-700 relative overflow-hidden flex items-center justify-center cursor-pointer active:bg-slate-700" 
-                                 onClick={() => { if (activeHole === i) { setScore(s => s + 1); setActiveHole(null); } }}>
-                                {activeHole === i && <div className="text-red-500 animate-bounce"><Icons.Skull className="w-12 h-12"/></div>}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        function EventCryptoMiner({ onFinish }) {
-            const [clicks, setClicks] = React.useState(0);
-            const [timeLeft, setTimeLeft] = React.useState(60);
-
-            React.useEffect(() => {
-                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            React.useEffect(() => {
-                if (timeLeft === 0) onFinish(clicks * 5); // 5 credit per click
-            }, [timeLeft]);
-
-            return (
-                <div className="w-full h-[400px] bg-slate-900 rounded-xl border-2 border-green-500 flex flex-col items-center justify-center relative select-none">
-                    <div className="absolute top-4 left-4 text-white font-bold">Waktu: {timeLeft}s</div>
-                    <div className="text-6xl font-black text-green-500 mb-4 animate-pulse">{clicks}</div>
-                    <div className="text-sm text-slate-400 mb-8">Total: {clicks * 5} Credits</div>
-                    <button 
-                        onMouseDown={() => setClicks(c => c + 1)}
-                        className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-800 shadow-[0_0_30px_#22c55e] flex items-center justify-center active:scale-90 transition-transform"
-                    >
-                        <Icons.Zap className="w-16 h-16 text-white" />
-                    </button>
-                    <p className="mt-4 text-slate-300 animate-bounce">KLIK CEPAT!</p>
-                </div>
-            );
-        }
-
-        // --- COMPONENTS --- (ImageCropper, AuthPage, GameAds unchanged)
-        // ... (Keeping existing ImageCropper, AuthPage, GameAds code ...)
+        // --- COMPONENTS ---
         function ImageCropper({ imageSrc, onCancel, onCrop }) {
             const [zoom, setZoom] = React.useState(1);
             const [minZoom, setMinZoom] = React.useState(0.1);
@@ -719,8 +653,118 @@
             );
         }
 
-        // --- MISSING PAGES RESTORED ---
-        
+        function EventBirdShooter({ onFinish }) {
+            const [score, setScore] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(60); 
+            const [birds, setBirds] = React.useState([]);
+            const gameAreaRef = React.useRef(null);
+
+            React.useEffect(() => {
+                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
+                const spawner = setInterval(() => {
+                    if (Math.random() > 0.3) {
+                        const id = Date.now() + Math.random();
+                        const top = Math.random() * 80 + 10;
+                        const speed = Math.random() * 3 + 2;
+                        setBirds(prev => [...prev, { id, top, left: -10, speed }]);
+                    }
+                }, 800);
+
+                const mover = setInterval(() => {
+                    setBirds(prev => prev.map(b => ({ ...b, left: b.left + b.speed })).filter(b => b.left < 110));
+                }, 50);
+
+                return () => { clearInterval(timer); clearInterval(spawner); clearInterval(mover); };
+            }, []);
+
+            React.useEffect(() => {
+                if (timeLeft === 0) onFinish(score * 50);
+            }, [timeLeft]);
+
+            const shoot = (id) => {
+                setBirds(prev => prev.filter(b => b.id !== id));
+                setScore(s => s + 1);
+            };
+
+            return (
+                <div className="relative w-full h-[400px] bg-slate-900 rounded-xl overflow-hidden border-2 border-blue-500 cursor-crosshair select-none animate-fade-in">
+                    <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded text-white font-bold z-10">Waktu: {timeLeft}s</div>
+                    <div className="absolute top-4 right-4 bg-black/50 px-4 py-2 rounded text-yellow-400 font-bold z-10">Skor: {score} (Rp {score * 50})</div>
+                    {birds.map(bird => (
+                        <div key={bird.id} onMouseDown={() => shoot(bird.id)} className="absolute w-10 h-10 text-red-500 bird-target transition-transform active:scale-150" style={{ top: `${bird.top}%`, left: `${bird.left}%` }}>
+                            <Icons.Target />
+                        </div>
+                    ))}
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-700/20 font-black text-6xl">CYBER HUNT</div>
+                </div>
+            );
+        }
+
+        function EventWhackAHacker({ onFinish }) {
+            const [score, setScore] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(60);
+            const [activeHole, setActiveHole] = React.useState(null);
+
+            React.useEffect(() => {
+                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
+                const popup = setInterval(() => {
+                    setActiveHole(Math.floor(Math.random() * 9));
+                    setTimeout(() => setActiveHole(null), 800);
+                }, 1000);
+                return () => { clearInterval(timer); clearInterval(popup); };
+            }, []);
+
+            React.useEffect(() => {
+                if (timeLeft === 0) onFinish(score * 30);
+            }, [timeLeft]);
+
+            return (
+                <div className="w-full bg-slate-900 p-4 rounded-xl border-2 border-red-500 select-none animate-fade-in">
+                    <div className="flex justify-between mb-4 text-white font-bold">
+                        <span>Waktu: {timeLeft}s</span>
+                        <span className="text-green-400">Dapat: {score * 30}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        {[...Array(9)].map((_, i) => (
+                            <div key={i} className="aspect-square bg-slate-800 rounded-full border-4 border-slate-700 relative overflow-hidden flex items-center justify-center cursor-pointer active:bg-slate-700" 
+                                 onClick={() => { if (activeHole === i) { setScore(s => s + 1); setActiveHole(null); } }}>
+                                {activeHole === i && <div className="text-red-500 animate-bounce"><Icons.Skull className="w-12 h-12"/></div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function EventCryptoMiner({ onFinish }) {
+            const [clicks, setClicks] = React.useState(0);
+            const [timeLeft, setTimeLeft] = React.useState(60);
+
+            React.useEffect(() => {
+                const timer = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            React.useEffect(() => {
+                if (timeLeft === 0) onFinish(clicks * 5);
+            }, [timeLeft]);
+
+            return (
+                <div className="w-full h-[400px] bg-slate-900 rounded-xl border-2 border-green-500 flex flex-col items-center justify-center relative select-none animate-fade-in">
+                    <div className="absolute top-4 left-4 text-white font-bold">Waktu: {timeLeft}s</div>
+                    <div className="text-6xl font-black text-green-500 mb-4 animate-pulse">{clicks}</div>
+                    <div className="text-sm text-slate-400 mb-8">Total: {clicks * 5} Credits</div>
+                    <button 
+                        onMouseDown={() => setClicks(c => c + 1)}
+                        className="w-32 h-32 rounded-full bg-gradient-to-br from-green-600 to-emerald-800 shadow-[0_0_30px_#22c55e] flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                        <Icons.Zap className="w-16 h-16 text-white" />
+                    </button>
+                    <p className="mt-4 text-slate-300 animate-bounce">KLIK CEPAT!</p>
+                </div>
+            );
+        }
+
         function InfoPage() {
             const [expanded, setExpanded] = React.useState(null);
             const faqs = [
@@ -1239,6 +1283,7 @@
             const [view, setView] = React.useState('lobby'); 
             const [activeGame, setActiveGame] = React.useState(null);
             const [activeEvent, setActiveEvent] = React.useState(null);
+            const [eventStage, setEventStage] = React.useState('intro'); // State for event intro screen
             const [balance, setBalance] = React.useState(0);
             const [winMessage, setWinMessage] = React.useState('Selamat Datang');
             const [profileData, setProfileData] = React.useState({ full_name: '', avatar_url: '', role: 'user', title: 'Newbie', total_spins: 0, avatar_border: 'default', inventory: ['default'] });
@@ -1298,19 +1343,52 @@
                 setActiveEvent(null);
             };
 
+            // Update handleSelectEvent to include setting eventStage
+            const handleSelectEvent = (eventId) => {
+                setActiveEvent(eventId);
+                setEventStage('intro');
+            };
+
             const renderContent = () => {
                 let content = null;
                 
                 if (activeEvent) {
+                    const eventDesc = EVENT_DESCRIPTIONS[activeEvent];
                     // Event Game Overlay
                     return (
-                        <div className="fixed inset-0 z-50 bg-slate-900/90 flex items-center justify-center p-4">
-                            <div className="w-full max-w-2xl bg-slate-800 p-6 rounded-2xl border border-yellow-500/50 shadow-2xl relative">
+                        <div className="fixed inset-0 z-50 bg-slate-900/95 flex items-center justify-center p-4 overflow-y-auto">
+                             <div className="w-full max-w-2xl bg-slate-800 p-6 rounded-2xl border border-yellow-500/50 shadow-2xl relative">
                                 <button onClick={() => setActiveEvent(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><Icons.X /></button>
-                                <h2 className="text-2xl font-cyber text-center text-yellow-400 mb-4">EVENT MINIGAME</h2>
-                                {activeEvent === 'hunt' && <EventBirdShooter onFinish={handleEventFinish} />}
-                                {activeEvent === 'hacker' && <EventWhackAHacker onFinish={handleEventFinish} />}
-                                {activeEvent === 'miner' && <EventCryptoMiner onFinish={handleEventFinish} />}
+                                
+                                {eventStage === 'intro' ? (
+                                    <div className="text-center space-y-6 animate-fade-in">
+                                        <h2 className="text-3xl font-cyber text-yellow-400 tracking-widest mb-2">{eventDesc.title}</h2>
+                                        
+                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-blue-500/30 text-left">
+                                            <h3 className="text-lg font-bold text-blue-400 mb-2 flex items-center gap-2"><Icons.Info/> Misi Kamu</h3>
+                                            <p className="text-slate-300 text-sm leading-relaxed">{eventDesc.story}</p>
+                                        </div>
+
+                                        <div className="bg-slate-900/50 p-4 rounded-xl border border-green-500/30 text-left">
+                                            <h3 className="text-lg font-bold text-green-400 mb-2 flex items-center gap-2"><Icons.Target/> Cara Bermain</h3>
+                                            <p className="text-slate-300 text-sm leading-relaxed">{eventDesc.how}</p>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => setEventStage('playing')}
+                                            className="w-full py-4 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-black text-xl rounded-xl shadow-lg hover:scale-105 transition-transform font-cyber tracking-widest mt-4"
+                                        >
+                                            MULAI MISI
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="animate-fade-in">
+                                        <h2 className="text-xl font-cyber text-center text-yellow-400 mb-4">EVENT SEDANG BERLANGSUNG</h2>
+                                        {activeEvent === 'hunt' && <EventBirdShooter onFinish={handleEventFinish} />}
+                                        {activeEvent === 'hacker' && <EventWhackAHacker onFinish={handleEventFinish} />}
+                                        {activeEvent === 'miner' && <EventCryptoMiner onFinish={handleEventFinish} />}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
@@ -1323,7 +1401,7 @@
                 else if (view === 'shop') content = <ShopPage session={session} balance={balance} updateBalance={updateBalance} profileData={profileData} refreshProfile={loadUserData} />;
                 else if (view === 'inbox') content = <InboxPage profileData={profileData} />; 
                 else if (view === 'game') {
-                    if (!activeGame) content = <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} onSelectEvent={setActiveEvent} />;
+                    if (!activeGame) content = <Lobby setGame={(g) => { setActiveGame(g); setWinMessage("Siap Main!"); }} onSelectEvent={handleSelectEvent} />;
                     else {
                         const info = GAME_INFO[activeGame];
                         content = (
@@ -1350,7 +1428,7 @@
                     }
                 } 
                 else if (view === 'search') content = <SearchUserPage session={session} />;
-                else { content = <Lobby setGame={(g) => { setActiveGame(g); setView('game'); }} onSelectEvent={setActiveEvent} />; }
+                else { content = <Lobby setGame={(g) => { setActiveGame(g); setView('game'); }} onSelectEvent={handleSelectEvent} />; }
                 return content;
             };
 
